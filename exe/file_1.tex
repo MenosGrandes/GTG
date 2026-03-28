@@ -1,66 +1,12 @@
-Celem zadania jest implementacja funkcji utility w języku JavaScript, odpowiedzialnej za agregację danych finansowych. Funkcja musi przetwarzać surowe dane transakcyjne, filtrować je zgodnie z kryteriami biznesowymi i zwracać podsumowanie w formie obiektu klucz-wartość.
+ \sectionZadanie
 
-\section{Specyfikacja Funkcji}
+ \textbf{A}  
+\textit{Parametry:}  
+\begin{itemize}  
+  \item \texttt{str}: Parametry jakies 
+\end{itemize}  
+\textit{Wartość zwracana:}  \\
+Wartosc zwracana  \\
+\textit{Opis:}  \\
+Opis. \\ 
 
-\subsection{Sygnatura}
-Funkcja \texttt{getRevenueByCategory} powinna być wyeksportowana.
-
-
-
-\subsection{Parametry Wejściowe}
-\begin{enumerate}
-    \item \texttt{transactions} (Array): Tablica obiektów reprezentujących pojedyncze transakcje.
-    \begin{itemize}
-        \item Typ: \texttt{Array<Object>}
-        \item Domyślna wartość: Brak (wymagany parametr).
-        \item Zachowanie dla nie-tablicy: Jeśli parametr nie jest tablicą, funkcja musi zwrócić pusty obiekt \texttt{\{\}}.
-    \end{itemize}
-    \item \texttt{minAmount} (Number): Minimalna kwota transakcji, która kwalifikuje się do raportu.
-    \begin{itemize}
-        \item Typ: \texttt{Number}
-        \item Domyślna wartość: \texttt{0}.
-        \item Zachowanie: Transakcje z kwotą mniejszą niż \texttt{minAmount} muszą zostać odrzucone.
-    \end{itemize}
-\end{enumerate}
-
-\subsection{Wartość Zwracana}
-\begin{itemize}
-    \item Typ: \texttt{Object}
-    \item Struktura: Obiekt, gdzie \textbf{kluczem} jest nazwa kategorii (string), a \textbf{wartością} jest suma kwot (number) dla tej kategorii.
-    \item Przykład: \texttt{\{ "Electronics": 3000, "Books": 50 \}}
-\end{itemize}
-
-\section{Struktura Danych Wejściowych}
-Pojedynczy obiekt transakcji w tablicy \texttt{transactions} może zawierać następujące pola:
-
-\begin{lstlisting}[caption=Przykładowy obiekt transakcji]
-{
-  category: String,    // Nazwa kategorii (wymagane)
-  amount: Number,      // Kwota transakcji (wymagane)
-}
-\end{lstlisting}
-
-\section{Logika Biznesowa}
-Implementacja musi realizować następujące kroki w podanej kolejności:
-
-\begin{enumerate}
-    \item \textbf{Walidacja Kontenera:} Sprawdź, czy \texttt{transactions} jest tablicą. Jeśli nie, zwróć \texttt{\{\}}.
-    \item \textbf{Filtracja Validności:} Pomiń elementy, które nie spełniają warunków:
-    \begin{itemize}
-        \item Pole \texttt{category} istnieje i nie jest wartością \texttt{null}, \texttt{undefined} ani pustym stringiem.
-        \item Pole \texttt{amount} istnieje i jest typem \texttt{number}.
-        \item Pole \texttt{amount} nie jest wartością \texttt{NaN}.
-    \end{itemize}
-    \item \textbf{Filtracja Kwotowa:} Pomiń elementy, gdzie \texttt{amount < minAmount}.
-    \item \textbf{Agregacja:} Zsumuj kwoty \texttt{amount} grupując je po kluczu \texttt{category}.
-    \item \textbf{Zwróć Wynik:} Zwróć gotowy obiekt aggregacji.
-\end{enumerate}
-
-\section{Ograniczenia Techniczne (Constraints)}
-Kod musi spełniać poniższe wymagania jakościowe:
-
-\begin{itemize}
-    \item \textbf{Immutability:} Funkcja \textbf{nie może mutować} oryginalnej tablicy \texttt{transactions} ani obiektów w niej zawartych.
-    \item \textbf{Czystość:} Funkcja musi być czysta (pure function) – dla tych samych danych wejściowych zawsze zwraca ten sam wynik i nie wywołuje side effects (np. console.log, API calls).
-    \item \textbf{Precyzja:} Wyniki powinny być liczbami zmiennoprzecinkowymi. Nie wymagane jest zaokrąglanie, chyba że wynika to z operacji matematycznych.
-\end{itemize}

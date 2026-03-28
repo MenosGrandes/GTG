@@ -8,7 +8,7 @@ function seededRandom(seed) {
     const m = 2147483648; // 2^31
     let state = seed;
 
-    return function() {
+    return function () {
         state = (a * state + c) % m;
         // Handle negative results (JavaScript % can return negative)
         if (state < 0) state += m;
@@ -91,7 +91,7 @@ try {
         }
 
         const fileContent = fs.readFileSync(filePath, 'utf8');
-        fs.appendFileSync(outputFilePath, `${fileContent}`);
+        fs.appendFileSync(outputFilePath, `${fileContent} \n`);
     }
 
     console.log("All  files have been concatenated into:", outputFilePath);

@@ -12,7 +12,8 @@ This repository combines **Node.js** for JavaScript file generation, **LuaTeX** 
 - Matches JavaScript implementation for consistent results  
 
 ✅ **Dynamic Document Building**  
-- Automatically selects and shuffles .tex files  
+- Automatically selects and shuffles .tex files, from exe folder
+- Automatically selects and shuffles .js files, from tests folder
 - Supports customizable input parameters (seed, count)  
 
 ✅ **JavaScript Obfuscation**  
@@ -29,11 +30,8 @@ This repository combines **Node.js** for JavaScript file generation, **LuaTeX** 
 - Node.js (v14+)  
 - LuaTeX (LaTeX compiler)  
 - npm (Node Package Manager)
+- make
 
-### Install Dependencies
-```bash
-npm install
-```
 
 ## 🧪 Usage
 
@@ -63,10 +61,13 @@ make SEED=42 COUNT=3
 
 ## 📁 Project Structure
 ```
-├── main.lua          # LuaTeX script with exercise generation logic
-├── obfuscator_config.json  # JS obfuscation configuration
-├── Makefile          # Build automation script
-└── README.md         # This file
+config                 - contain .tex configuration files
+exe                    - contain .tex instructions for exercises
+tests                  - contain .js tests in Jest
+main.js                - implementation for merging ans shuffling .js files from tests
+main.tex               - main tex file, from which PDF is generated
+obfuscator_config.json - configuration for obfuscator
+
 ```
 
 ## 🔧 Customization
@@ -79,39 +80,17 @@ COUNT ?= 3      # Number of files to include
 MAIN_FILE = main  # Base name for output files
 ```
 
-### Customize LuaTeX Script
-Edit `main.lua` to change:
-- File directories (`dir_name`)
-- Shuffle algorithm logic
-- Error message formatting
-
 ## 📄 Document Workflow
 1. Place your `.tex` files in the `exe/` directory  
+1. Place your `js` test files in the `tests/` directory  
 2. Run `make` to generate:  
    - `output_pdf/main.pdf` (LaTeX document)  
    - `output_test/main.obs.test.js` (obfuscated JS)  
 
-## 🧪 Testing
-To verify functionality:
-```bash
-# Test with 5 files and seed 100
-make SEED=100 COUNT=5
-```
 
-## 🛠️ Contributing
-1. Fork the repository  
-2. Create a new branch (`git checkout -b feature-xyz`)  
-3. Make your changes  
-4. Push to your fork  
-5. Submit a pull request  
 
 ## 📜 License
 MIT License
-
-## 🧑‍💻 Development Tips
-- Use `--verbose` flag with LuaTeX for detailed logs
-- Add error handling in JavaScript for robustness
-- Consider adding input validation for edge cases
 
 > ⚠️ Always verify obfuscated code functionality before deployment
 
