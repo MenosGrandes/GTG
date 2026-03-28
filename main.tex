@@ -95,11 +95,12 @@ end
 
 % Define command with 2 arguments: {seed}{count}
 \newcommand{\inputexercises}[2]{\directlua{input_exercise_files("#1", "#2")}}
-
+\newcommand{\pdfTitle}{ Tytul}
+\input{config/preambule_pl}
 \begin{document}
-	
+	\date{\monthyearpl}
+	\maketitle
 
 \inputexercises{\myseed}{\mycount}
-
-	
+\input{config/copyright_pl}	
 \end{document}
