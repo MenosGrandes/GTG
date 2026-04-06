@@ -62,7 +62,7 @@ make SEED=42 COUNT=3
 ## 📁 Project Structure
 ```
 config                 - contain .tex configuration files
-exe                    - contain .tex instructions for exercises
+tex_exercises                    - contain .tex instructions for exercises
 tests                  - contain .js tests in Jest
 main.js                - implementation for merging ans shuffling .js files from tests
 main.tex               - main tex file, from which PDF is generated

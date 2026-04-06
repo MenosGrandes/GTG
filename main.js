@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const instructionDir = 'tests'
+const instructionDir = 'js_tests'
 // Helper: Convert string seed to a number for random generation
 function seededRandom(seed) {
     const a = 1103515245;
@@ -82,7 +82,8 @@ const dirPath = path.resolve(__dirname, `${instructionDir}`);
 
 try {
     fs.writeFileSync(outputFilePath, '');
-    fs.appendFileSync(outputFilePath, `const functions = require('./functions.js')\n`);
+    const data = fs.readFileSync('./js_config/utils.js', 'utf-8');
+    fs.appendFileSync(outputFilePath, data);
 
     for (const fileName of result) {
         const filePath = path.join(dirPath, fileName);

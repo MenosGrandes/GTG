@@ -49,7 +49,7 @@ compile_js: check-tools dirs
 	$(NODE_JS) $(MAIN_JS_FILE) $(SEED) $(COUNT) '$(TEST_DIR)/$(MAIN_FILE).js'
 	@echo "Install npm packages"
 	$(NPM) install
-	$(OBFUSCATOR) --config 'obfuscator_config.json' '$(TEST_DIR)/$(MAIN_FILE).js' --output '$(TEST_DIR)/$(MAIN_FILE).obs.test.js'
+	$(OBFUSCATOR) --config 'js_config/obfuscator_config.json' '$(TEST_DIR)/$(MAIN_FILE).js' --output '$(TEST_DIR)/$(MAIN_FILE).obs.test.js'
 
 compile: compile_pdf compile_js
 
