@@ -82,7 +82,8 @@ const dirPath = path.resolve(__dirname, `${instructionDir}`);
 
 try {
     fs.writeFileSync(outputFilePath, '');
-    const data = fs.readFileSync('./js_config/utils.js', 'utf-8');
+
+    const data = fs.readFileSync('./utils.js', 'utf-8');
     fs.appendFileSync(outputFilePath, data);
 
     for (const fileName of result) {
