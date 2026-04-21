@@ -1,0 +1,27 @@
+# Node.js
+node_modules/
+package-lock.json
+
+# Build directories
+build/
+output_pdf/
+output_test/
+zip_output/
+code/
+
+# Generated files
+*.aux
+*.log
+*.out
+*.toc
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.pdf
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+*~
+*.bak

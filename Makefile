@@ -7,12 +7,13 @@ MAIN_FILE = main
 TEX_FILE = $(MAIN_FILE).tex
 MAIN_JS_FILE = $(MAIN_FILE).js
 OUTPUT_JS_FILE = functions.test.js
+ZIP_OUTPUT_FILE = functions.zip
 
 # Directories
 BUILD_DIR = build
 PDF_DIR = output_pdf
 TEST_DIR = output_test
-
+ZIP_OUTPUT_DIR = zip_output
 # Compiler
 LUALATEX = lualatex
 NODE_JS = node
@@ -30,7 +31,10 @@ $(PDF_DIR):
 $(TEST_DIR):
 	@mkdir -p $(TEST_DIR)
 
-dirs: $(BUILD_DIR) $(PDF_DIR) $(TEST_DIR) 
+$(ZIP_OUTPUT_DIR):
+	@mkdir -p $(ZIP_OUTPUT_DIR)
+
+dirs: $(BUILD_DIR) $(PDF_DIR) $(TEST_DIR) $(ZIP_OUTPUT_DIR)
 
 check-node:
 	@command -v node >/dev/null 2>&1 || { echo "Error: Node.js not found. Please install from https://nodejs.org/"; exit 1; }
@@ -43,7 +47,7 @@ check-tools: check-node check-luatex
 compile_pdf: check-tools dirs
 	@echo "Building LuaLatex with SEED=$(SEED) and COUNT=$(COUNT)"
 	$(LUALATEX) -output-directory=$(BUILD_DIR) -jobname=$(MAIN_FILE) '\def\myseed{$(SEED)}\def\mycount{$(COUNT)}\input{$(TEX_FILE)}'
-	@cp $(BUILD_DIR)/$(MAIN_FILE).pdf $(PDF_DIR)/$(MAIN_FILE).pdf
+	@mv $(BUILD_DIR)/$(MAIN_FILE).pdf $(PDF_DIR)/$(MAIN_FILE).pdf
 	@echo "PDF output: $(PDF_DIR)/$(MAIN_FILE).pdf"
 
 compile_js: check-tools dirs
@@ -53,13 +57,20 @@ compile_js: check-tools dirs
 	$(NPM) install
 	$(OBFUSCATOR) --config 'js_config/obfuscator_config.json' '$(TEST_DIR)/$(MAIN_FILE).js' --output '$(TEST_DIR)/$(OUTPUT_JS_FILE)'
 
-compile: compile_pdf compile_js
+create_zip: compile_js compile_pdf
+	@echo "Creating zip archive: $(ZIP_OUTPUT_FILE)"
+	@zip -q -j $(ZIP_OUTPUT_DIR)/$(ZIP_OUTPUT_FILE) $(TEST_DIR)/$(OUTPUT_JS_FILE) 
+	@mv $(PDF_DIR)/$(MAIN_FILE).pdf $(ZIP_OUTPUT_DIR)/$(MAIN_FILE).pdf
+	@echo "Zip created: $(ZIP_OUTPUT_FILE)/$(ZIP_OUTPUT_DIR)"
+
+compile: create_zip
 
 clean:
 	@echo "Cleaning intermediate files..."
 	@rm -rf $(BUILD_DIR)/*
 	@rm -rf $(TEST_DIR)/*
 	@rm -rf $(PDF_DIR)/*
+	@rm -rf $(ZIP_OUTPUT_DIR)/*
 	@echo "All folders cleaned"
 
 # Clean everything including PDFs
@@ -89,4 +100,4 @@ help:
 	@echo "  PDF files: $(PDF_DIR)/"
 	@echo "  JS files: $(TEST_DIR)/"
 
-.PHONY: all compile_pdf version clean distclean help dirs compile_js compile_pdf
+.PHONY: all compile_pdf version clean distclean help dirs compile_js compile_pdf create_zip
