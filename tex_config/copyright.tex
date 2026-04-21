@@ -1,0 +1,42 @@
+\newcommand{\useCopyright}{%
+  \newpage
+  \ifdefined\useLanguage
+  \ifthenelse{\equal{\useLanguage}{PL}}{%
+    \begin{center}
+      \vspace*{0.5cm}
+      \textcopyright  ~\MyCopyrightYear ~\CopyrightAuthors
+      \\\textbf{Wszelkie prawa zastrzeżone.}
+
+      \vspace{0.5cm}
+      Niniejszy dokument jest chroniony prawem autorskim.
+      Zabrania się kopiowania, rozpowszechniania, udostępniania,
+      modyfikowania lub wykorzystywania całości lub fragmentów
+      dokumentu bez uprzedniej, pisemnej zgody autora.
+
+      \vspace{0.5cm}
+      Jakiekolwiek naruszenie powyższych warunków stanowi naruszenie
+      prawa autorskiego i może skutkować odpowiedzialnością cywilną
+      lub karną zgodnie z obowiązującymi przepisami prawa.
+    \end{center}
+  }{%
+    \begin{center}
+      \vspace*{0.5cm}
+      \textcopyright  ~\MyCopyrightYear ~\CopyrightAuthors
+      \\\textbf{All rights reserved.}
+      \vspace{0.5cm}
+      This document is protected by copyright law.
+      Copying, distributing, sharing, modifying, or using in any
+      form, in whole or in part, without prior written consent from
+      the author is strictly prohibited.
+
+      \vspace{0.5cm}
+      Any violation of the above conditions constitutes a copyright
+      infringement and may result in civil or criminal liability
+      according to applicable laws.
+    \end{center}
+  }%
+  \else
+  \PackageError{copyright}{Language not set}{You must define
+  \string\useLanguage\space before calling \string\useCopyright}%
+  \fi
+}

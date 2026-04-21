@@ -1,97 +1,97 @@
-# LuaLaTeX Exercise Generator with JS Obfuscation Tool
+# LaTeX Exercise Generator with JS Test Bundler
 
-## 📚 Overview
-This repository combines **Node.js** for JavaScript file generation, **LuaTeX** for dynamic LaTeX document creation, and **JavaScript obfuscation** to create a comprehensive toolchain for educational materials. It allows you to:
-- Generate randomized exercise files from a directory
-- Concatenate them into a single LaTeX document
-- Obfuscate the generated JS code for security
+A build system that generates randomized exercise PDFs and matching JavaScript test files. Uses the same seed for both LaTeX and JS to ensure they select identical exercises.
 
-## 📦 Features
-✅ **Seeded Randomization**  
-- Uses Lua's `seeded_random` function with custom seed values  
-- Matches JavaScript implementation for consistent results  
+## What it does
 
-✅ **Dynamic Document Building**  
-- Automatically selects and shuffles .tex files, from exe folder
-- Automatically selects and shuffles .js files, from tests folder
-- Supports customizable input parameters (seed, count)  
+- Picks random exercises from a pool using a seed value
+- Generates a PDF with those exercises
+- Creates a matching JS test file with the same exercises
+- Validates that both outputs match
+- Obfuscates the JS for distribution
 
-✅ **JavaScript Obfuscation**  
-- Converts generated JS files to obfuscated versions  
-- Uses `javascript-obfuscator` npm package  
+## Requirements
 
-✅ **Makefile Integration**  
-- Build PDFs with custom seed/count values  
-- Separate build directories for intermediate files  
-
-## 📡 Installation
-
-### System Requirements
-- Node.js (v14+)  
-- LuaTeX (LaTeX compiler)  
-- npm (Node Package Manager)
+- Node.js 14+
+- LuaTeX
 - make
 
+## Quick start
 
-## 🧪 Usage
-
-### Build Process
-Run the following command with your desired parameters:
 ```bash
-make SEED=12 COUNT=5
-```
-Or use defaults:
-```bash
-make
+make SEED=42 COUNT=10
 ```
 
-### Available Targets
-| Target         | Description                          |
-|----------------|--------------------------------------|
-| `compile`      | Builds PDF and JS files              |
-| `compile_pdf`  | Only builds the LaTeX document       |
-| `compile_js`   | Only generates JavaScript output     |
-| `clean`        | Removes build directories            |
-| `distclean`    | Cleans all generated files           |
+This builds a PDF and JS file with 10 randomly selected exercises using seed 42.
 
-### Example Output
-```bash
-make SEED=42 COUNT=3
-```
-
-## 📁 Project Structure
-```
-config                 - contain .tex configuration files
-tex_exercises                    - contain .tex instructions for exercises
-tests                  - contain .js tests in Jest
-main.js                - implementation for merging ans shuffling .js files from tests
-main.tex               - main tex file, from which PDF is generated
-obfuscator_config.json - configuration for obfuscator
+## Project structure
 
 ```
+config/
+  ├── preambule.tex          - Document setup (supports Polish/English)
+  ├── copyright.tex          - Copyright notice
+  ├── get_random_exercises.tex - Random selection logic
+  └── copy_protect.tex       - PDF protection
+tex_exercises/               - Exercise files (.tex)
+tests/                       - Test files (.js)
+main.tex                     - LaTeX entry point
+main.js                      - JS bundler
+```
 
-## 🔧 Customization
+## Configuration
 
-### Modify Parameters
-Update these values in the Makefile:
+### Set language
+
+In `main.tex`:
+```latex
+\newcommand{\useLanguage}{PL}  % PL or ENG
+```
+
+### Set document info
+
+```latex
+\newcommand{\pdfTitle}{Your Title}
+\newcommand{\CopyrightAuthors}{Author1 \& Author2}
+```
+
+### Makefile options
+
 ```makefile
-SEED ?= 12      # Seed value for randomization
-COUNT ?= 3      # Number of files to include
-MAIN_FILE = main  # Base name for output files
+SEED ?= 12      # Random seed
+COUNT ?= 3      # Number of exercises
 ```
 
-## 📄 Document Workflow
-1. Place your `.tex` files in the `exe/` directory  
-1. Place your `js` test files in the `tests/` directory  
-2. Run `make` to generate:  
-   - `output_pdf/main.pdf` (LaTeX document)  
-   - `output_test/main.obs.test.js` (obfuscated JS)  
+## How it works
 
+1. LaTeX reads all .tex files from `tex_exercises/`, sorts them, shuffles with the seed, picks COUNT files
+2. JS does the same with .js files from `tests/`
+3. Both write their file lists to `build/` for comparison
+4. Build fails if the lists don't match
 
+## File naming
 
-## 📜 License
-MIT License
+Exercise and test files must match:
+- `tex_exercises/file_1.tex`
+- `tests/file_1.js`
 
-> ⚠️ Always verify obfuscated code functionality before deployment
+Missing files will cause a build error.
 
-This toolchain provides a flexible framework for creating dynamic educational materials while maintaining security through code obfuscation. The separation of concerns between LaTeX generation and JS processing makes it ideal for academic and training environments.
+## Build targets
+
+```bash
+make              # Build everything
+make compile_pdf  # PDF only
+make compile_js   # JS only
+make clean        # Remove build files
+```
+
+## Output
+
+- `output_pdf/main.pdf` - The exercise PDF
+- `output_test/main.obs.test.js` - Obfuscated test bundle
+- `build/tex_shuffled_files.txt` - LaTeX file order
+- `build/js_shuffled_files.txt` - JS file order
+
+## License
+
+MIT

@@ -1,5 +1,11 @@
 {
     "compact": true,
+    "identifierNamesGenerator": "hexadecimal",
+    "stringArray": true,
+    "stringArrayEncoding": [
+        "base64"
+    ],
+    "stringArrayThreshold": 0.5,
     "controlFlowFlattening": true,
     "controlFlowFlatteningThreshold": 0.75,
     "deadCodeInjection": false,

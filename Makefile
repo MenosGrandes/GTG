@@ -6,6 +6,7 @@ COUNT ?= 3
 MAIN_FILE = main
 TEX_FILE = $(MAIN_FILE).tex
 MAIN_JS_FILE = $(MAIN_FILE).js
+OUTPUT_JS_FILE = functions.test.js
 
 # Directories
 BUILD_DIR = build
@@ -17,6 +18,7 @@ LUALATEX = lualatex
 NODE_JS = node
 NPM = npm
 OBFUSCATOR = ./node_modules/javascript-obfuscator/bin/javascript-obfuscator
+
 all: compile
 
 $(BUILD_DIR):
@@ -49,7 +51,7 @@ compile_js: check-tools dirs
 	$(NODE_JS) $(MAIN_JS_FILE) $(SEED) $(COUNT) '$(TEST_DIR)/$(MAIN_FILE).js'
 	@echo "Install npm packages"
 	$(NPM) install
-	$(OBFUSCATOR) --config 'js_config/obfuscator_config.json' '$(TEST_DIR)/$(MAIN_FILE).js' --output '$(TEST_DIR)/$(MAIN_FILE).obs.test.js'
+	$(OBFUSCATOR) --config 'js_config/obfuscator_config.json' '$(TEST_DIR)/$(MAIN_FILE).js' --output '$(TEST_DIR)/$(OUTPUT_JS_FILE)'
 
 compile: compile_pdf compile_js
 

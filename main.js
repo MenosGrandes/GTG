@@ -9,9 +9,15 @@ function seededRandom(seed) {
     let state = seed;
 
     return function () {
-        state = (a * state + c) % m;
-        // Handle negative results (JavaScript % can return negative)
-        if (state < 0) state += m;
+        // Use BigInt for accurate calculation, then convert back
+        const bigA = BigInt(a);
+        const bigC = BigInt(c);
+        const bigM = BigInt(m);
+        const bigState = BigInt(state);
+        
+        const newState = (bigA * bigState + bigC) % bigM;
+        state = Number(newState);
+        
         return state / m;
     };
 }
@@ -46,8 +52,40 @@ function getJSFiles(seed, n) {
         if (n > files.length) {
             return `Error: N (${n}) exceeds number of available JS files (${files.length}).`;
         }
+        
+        // Validate that test files match tex_exercises files
+        const texExercisesPath = path.resolve(__dirname, 'tex_exercises');
+        if (fs.existsSync(texExercisesPath)) {
+            const texFiles = fs.readdirSync(texExercisesPath)
+                .filter(file => file.endsWith('.tex'))
+                .map(file => file.replace('.tex', ''));
+            
+            const jsFiles = files.map(file => file.replace('.js', ''));
+            
+            // Check if all tex files have corresponding js files
+            const missingJs = texFiles.filter(name => !jsFiles.includes(name));
+            const extraJs = jsFiles.filter(name => !texFiles.includes(name));
+            
+            if (missingJs.length > 0 || extraJs.length > 0) {
+                let errorMsg = 'ERROR: File mismatch between tests/ and tex_exercises/\n';
+                if (missingJs.length > 0) {
+                    errorMsg += `Missing .js files for: ${missingJs.slice(0, 5).join(', ')}`;
+                    if (missingJs.length > 5) errorMsg += ` and ${missingJs.length - 5} more`;
+                    errorMsg += '\n';
+                }
+                if (extraJs.length > 0) {
+                    errorMsg += `Extra .js files without .tex: ${extraJs.slice(0, 5).join(', ')}`;
+                    if (extraJs.length > 5) errorMsg += ` and ${extraJs.length - 5} more`;
+                }
+                throw new Error(errorMsg);
+            }
+        }
+        
+        // Sort files alphabetically for deterministic ordering before shuffle
+        files.sort();
+        
         let fileTables = files.map(removeExtension);
-        const rng = seededRandom(seed);
+        const rng = seededRandom(parseInt(seed, 10));
         shuffle(fileTables, rng); // Shuffle using seed
         const jsFilesShuffled = fileTables.slice(0, n); // Return first N elements
         return jsFilesShuffled.map(addJsExtension)
@@ -77,13 +115,23 @@ if (N <= 0) {
 const outputFilePath = process.argv[4];
 
 const result = getJSFiles(seed, N);
+
+// Check if result is an error message
+if (typeof result === 'string' && result.startsWith('Error')) {
+    console.error('\n' + '='.repeat(80));
+    console.error('FATAL ERROR:');
+    console.error('='.repeat(80));
+    console.error(result);
+    console.error('='.repeat(80) + '\n');
+    process.exit(1);
+}
+
 console.log("Shuffled JS files:", result);
 const dirPath = path.resolve(__dirname, `${instructionDir}`);
 
 try {
     fs.writeFileSync(outputFilePath, '');
-
-    const data = fs.readFileSync('./utils.js', 'utf-8');
+    const data = fs.readFileSync('./js_config/utils.js', 'utf-8');
     fs.appendFileSync(outputFilePath, data);
 
     for (const fileName of result) {
