@@ -1,5 +1,7 @@
 const functions = require('./functions.js')
-
+// Set global timeout for all tests (in milliseconds)
+// This prevents infinite loops and ensures tests complete quickly
+jest.setTimeout(10000); // 10 seconds per test
 // Run func N times — used by every test to get statistical coverage with random data
 function __mg_callN(func, N) {
   for (let i = 0; i < N; i++) func();
@@ -21,5 +23,9 @@ function __mg__generateRandomArray(length, max) {
 
 // Random integer in [min, max)
 function __mg__getRandomInt(min, max) {
+  return (Math.random() * (Math.ceil(max) - Math.ceil(min)) | 0) + Math.ceil(min);
+}
+// Random integer in [min, max)
+function __mg_randomInt(min, max) {
   return (Math.random() * (Math.ceil(max) - Math.ceil(min)) | 0) + Math.ceil(min);
 }

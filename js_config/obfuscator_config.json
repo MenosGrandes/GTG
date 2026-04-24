@@ -8,8 +8,10 @@
     "stringArrayThreshold": 0.5,
     "controlFlowFlattening": true,
     "controlFlowFlatteningThreshold": 0.75,
-    "deadCodeInjection": false,
+    "deadCodeInjection": true,
     "deadCodeInjectionThreshold": 0.4,
     "debugProtection": true,
-    "debugProtectionInterval": 0
+    "debugProtectionInterval": 0,
+    "removeComments": true
+
 }

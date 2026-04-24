@@ -1,0 +1,24 @@
+\newcommand{\usePlagiarism}{%
+	\newpage
+	\ifdefined\useLanguage
+	\ifthenelse{\equal{\useLanguage}{PL}}{%
+\begin{infobox}[title=UWAGA]
+	\vspace*{\fill} % start rozciągania pionowego
+Kazda proba plagiatu bedzie karana ocena 2, bez mozliwosci poprawy zadan. 	Kazda proba uzycia GenAI/AI/LLM albo innych modeli uczenia maszynowego/sztucznej inteligencji, jest surowo zabroniona i bedzie konczyla sie brakiem zaliczenia oraz brakiem zezwolenia na jakiekolwiek poprawki
+\vspace*{\fill} % koniec rozciągania pionowego
+
+\end{infobox}
+	}{%
+\begin{infobox}[title=ATTENTION]
+	\vspace*{\fill} 
+Any attempt at plagiarism will result in a grade of 2, with no opportunity for retakes. Any attempt to use GenAI/AI/LLM or other machine learning/artificial intelligence models is strictly prohibited and will result in a failure to pass and no retakes will be permitted.
+\vspace*{\fill} 
+
+\end{infobox}
+	}%
+	\else
+	\PackageError{copyright}{Language not set}{You must define
+		\string\useLanguage\space before calling \string\useCopyright}%
+	\fi
+}
+

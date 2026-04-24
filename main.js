@@ -1,6 +1,172 @@
 const fs = require('fs');
 const path = require('path');
-const instructionDir = 'js_tests'
+const crypto = require('crypto');
+const instructionDir = 'js_tests'  
+
+// ============================================================================
+// GLOBAL ERROR HANDLER
+// ============================================================================
+
+process.on('uncaughtException', (err) => {
+    console.error('\n' + '='.repeat(80));
+    console.error('FATAL ERROR:');
+    console.error('='.repeat(80));
+    console.error(err.message);
+    console.error('');
+    console.error('Stack trace:');
+    console.error(err.stack);
+    console.error('='.repeat(80) + '\n');
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('\n' + '='.repeat(80));
+    console.error('FATAL ERROR: Unhandled Promise Rejection');
+    console.error('='.repeat(80));
+    console.error(reason);
+    if (reason && reason.stack) {
+        console.error('');
+        console.error('Stack trace:');
+        console.error(reason.stack);
+    }
+    console.error('='.repeat(80) + '\n');
+    process.exit(1);
+});
+
+// ============================================================================
+// FUNCTION NAME OBFUSCATION
+// ============================================================================
+
+/**
+ * Generate deterministic obfuscated function name from original name and seed
+ * Each seed produces different names for the same function
+ * Includes collision detection
+ */
+function generateObfuscatedName(originalName, seed, existingNames = new Set()) {
+    let attempt = 0;
+    let hash, obfuscatedName;
+    
+    do {
+        // Combine seed with function name for unique hash per seed
+        // Add attempt counter to handle collisions
+        const combined = `${seed}_${originalName}_${seed}_${attempt}`;
+        hash = crypto.createHash('sha256')
+            .update(combined)
+            .digest('hex')
+            .substring(0, 8);
+        obfuscatedName = `fn_${hash}`;
+        attempt++;
+        
+        // Safety limit to prevent infinite loop
+        if (attempt > 1000) {
+            throw new Error(`Could not generate unique name for ${originalName} after 1000 attempts`);
+        }
+    } while (existingNames.has(obfuscatedName));
+    
+    return obfuscatedName;
+}
+
+/**
+ * Extract function names from test files
+ * Looks for: test('functionName', ...) and functions.functionName(...)
+ */
+function extractFunctionNames(code) {
+    const names = new Set();
+    
+    // Method 1: Extract from test() calls: test('functionName', ...)
+    const testMatches = code.matchAll(/test\s*\(\s*['"](\w+)['"]/g);
+    for (const match of testMatches) {
+        // Only add if it's a reasonable function name (at least 2 chars, starts with letter)
+        if (match[1].length >= 2 && /^[a-zA-Z]/.test(match[1])) {
+            names.add(match[1]);
+        }
+    }
+    
+    // Method 2: Extract from functions.xxx() calls
+    const functionCallMatches = code.matchAll(/functions\.(\w+)\s*\(/g);
+    for (const match of functionCallMatches) {
+        // Only add if it's a reasonable function name (at least 2 chars, starts with letter)
+        if (match[1].length >= 2 && /^[a-zA-Z]/.test(match[1])) {
+            names.add(match[1]);
+        }
+    }
+    
+    // Method 3: Extract from module.exports (if present)
+    const exportsMatch = code.match(/module\.exports\s*=\s*{([^}]+)}/s);
+    if (exportsMatch) {
+        const exportContent = exportsMatch[1];
+        const matches = exportContent.matchAll(/(\w+)(?:\s*[:,])/g);
+        for (const match of matches) {
+            if (match[1].length >= 2 && /^[a-zA-Z]/.test(match[1])) {
+                names.add(match[1]);
+            }
+        }
+    }
+    
+    // Method 4: Extract from module.exports.xxx = ...
+    const individualExports = code.matchAll(/module\.exports\.(\w+)\s*=/g);
+    for (const match of individualExports) {
+        if (match[1].length >= 2 && /^[a-zA-Z]/.test(match[1])) {
+            names.add(match[1]);
+        }
+    }
+    
+    return Array.from(names).sort();
+}
+
+/**
+ * Rename all function references in code
+ */
+function renameFunctionsInCode(code, mapping) {
+    let result = code;
+    
+    for (const [original, obfuscated] of Object.entries(mapping)) {
+        // Replace: functions.originalName
+        result = result.replace(
+            new RegExp(`functions\\.${original}\\b`, 'g'),
+            `functions.${obfuscated}`
+        );
+        
+        // Replace in test names: test('originalName', ...) -> test('obfuscated', ...)
+        result = result.replace(
+            new RegExp(`test\\s*\\(\\s*['"]${original}['"]`, 'g'),
+            `test('${obfuscated}'`
+        );
+        
+        // Replace in exports: originalName, or originalName:
+        result = result.replace(
+            new RegExp(`\\b${original}\\s*([,:])`, 'g'),
+            `${obfuscated}$1`
+        );
+    }
+    
+    return result;
+}
+
+/**
+ * Generate student template file
+ */
+function generateStudentTemplate(mapping) {
+    const lines = ['// Student Implementation Template', 
+                   '// Implement the following functions according to the PDF instructions',
+                   ''];
+    
+    for (const [original, obfuscated] of Object.entries(mapping)) {
+        lines.push(`// Function: ${obfuscated} (see PDF for requirements)`);
+        lines.push(`function ${obfuscated}() {`);
+        lines.push(`  // TODO: Implement this`);
+        lines.push(`  throw new Error('Not implemented');`);
+        lines.push(`}`);
+        lines.push('');
+    }
+    
+    lines.push('module.exports = {');
+    lines.push(Object.values(mapping).map(name => `  ${name}`).join(',\n'));
+    lines.push('};');
+    
+    return lines.join('\n');
+}
+
 // Helper: Convert string seed to a number for random generation
 function seededRandom(seed) {
     const a = 1103515245;
@@ -41,57 +207,53 @@ function addJsExtension(filename) {
 }
 // Main function to get JS files based on seed and N
 function getJSFiles(seed, n) {
-    try {
-        const dirPath = path.resolve(__dirname, instructionDir); // Adjust as needed
-        let files = fs.readdirSync(dirPath).filter(file => file.endsWith('.js'));
+    const dirPath = path.resolve(__dirname, instructionDir); // Adjust as needed
+    let files = fs.readdirSync(dirPath).filter(file => file.endsWith('.js'));
 
-        if (files.length === 0) {
-            return `No .js files found in ${instructionDir} directory.`;
-        }
-
-        if (n > files.length) {
-            return `Error: N (${n}) exceeds number of available JS files (${files.length}).`;
-        }
-        
-        // Validate that test files match tex_exercises files
-        const texExercisesPath = path.resolve(__dirname, 'tex_exercises');
-        if (fs.existsSync(texExercisesPath)) {
-            const texFiles = fs.readdirSync(texExercisesPath)
-                .filter(file => file.endsWith('.tex'))
-                .map(file => file.replace('.tex', ''));
-            
-            const jsFiles = files.map(file => file.replace('.js', ''));
-            
-            // Check if all tex files have corresponding js files
-            const missingJs = texFiles.filter(name => !jsFiles.includes(name));
-            const extraJs = jsFiles.filter(name => !texFiles.includes(name));
-            
-            if (missingJs.length > 0 || extraJs.length > 0) {
-                let errorMsg = 'ERROR: File mismatch between tests/ and tex_exercises/\n';
-                if (missingJs.length > 0) {
-                    errorMsg += `Missing .js files for: ${missingJs.slice(0, 5).join(', ')}`;
-                    if (missingJs.length > 5) errorMsg += ` and ${missingJs.length - 5} more`;
-                    errorMsg += '\n';
-                }
-                if (extraJs.length > 0) {
-                    errorMsg += `Extra .js files without .tex: ${extraJs.slice(0, 5).join(', ')}`;
-                    if (extraJs.length > 5) errorMsg += ` and ${extraJs.length - 5} more`;
-                }
-                throw new Error(errorMsg);
-            }
-        }
-        
-        // Sort files alphabetically for deterministic ordering before shuffle
-        files.sort();
-        
-        let fileTables = files.map(removeExtension);
-        const rng = seededRandom(parseInt(seed, 10));
-        shuffle(fileTables, rng); // Shuffle using seed
-        const jsFilesShuffled = fileTables.slice(0, n); // Return first N elements
-        return jsFilesShuffled.map(addJsExtension)
-    } catch (err) {
-        return `Error reading files: ${err.message}`;
+    if (files.length === 0) {
+        throw new Error(`No .js files found in ${instructionDir} directory.`);
     }
+
+    if (n > files.length) {
+        throw new Error(`N (${n}) exceeds number of available JS files (${files.length}).`);
+    }
+    
+    // Validate that test files match tex_exercises files
+    const texExercisesPath = path.resolve(__dirname, 'tex_exercises');
+    if (fs.existsSync(texExercisesPath)) {
+        const texFiles = fs.readdirSync(texExercisesPath)
+            .filter(file => file.endsWith('.tex'))
+            .map(file => file.replace('.tex', ''));
+        
+        const jsFiles = files.map(file => file.replace('.js', ''));
+        
+        // Check if all tex files have corresponding js files
+        const missingJs = texFiles.filter(name => !jsFiles.includes(name));
+        const extraJs = jsFiles.filter(name => !texFiles.includes(name));
+        
+        if (missingJs.length > 0 || extraJs.length > 0) {
+            let errorMsg = 'ERROR: File mismatch between tests/ and tex_exercises/\n';
+            if (missingJs.length > 0) {
+                errorMsg += `Missing .js files for: ${missingJs.slice(0, 5).join(', ')}`;
+                if (missingJs.length > 5) errorMsg += ` and ${missingJs.length - 5} more`;
+                errorMsg += '\n';
+            }
+            if (extraJs.length > 0) {
+                errorMsg += `Extra .js files without .tex: ${extraJs.slice(0, 5).join(', ')}`;
+                if (extraJs.length > 5) errorMsg += ` and ${extraJs.length - 5} more`;
+            }
+            throw new Error(errorMsg);
+        }
+    }
+    
+    // Sort files alphabetically for deterministic ordering before shuffle
+    files.sort();
+    
+    let fileTables = files.map(removeExtension);
+    const rng = seededRandom(parseInt(seed, 10));
+    shuffle(fileTables, rng); // Shuffle using seed
+    const jsFilesShuffled = fileTables.slice(0, n); // Return first N elements
+    return jsFilesShuffled.map(addJsExtension)
 }
 
 // Main entry point - Parse command-line arguments
@@ -116,36 +278,143 @@ const outputFilePath = process.argv[4];
 
 const result = getJSFiles(seed, N);
 
-// Check if result is an error message
-if (typeof result === 'string' && result.startsWith('Error')) {
-    console.error('\n' + '='.repeat(80));
-    console.error('FATAL ERROR:');
-    console.error('='.repeat(80));
-    console.error(result);
-    console.error('='.repeat(80) + '\n');
+console.log("Shuffled JS files:", result);
+
+// Write JS shuffled files to output for validation
+const jsShuffledPath = 'build/js_shuffled_files.txt';
+const jsFileNames = result.map(f => f.replace('.js', ''));
+fs.writeFileSync(jsShuffledPath, jsFileNames.join('\n') + '\n');
+
+// Compare with Lua output if it exists
+const texShuffledPath = 'build/tex_shuffled_files.txt';
+if (fs.existsSync(texShuffledPath)) {
+    const texFiles = fs.readFileSync(texShuffledPath, 'utf8').trim().split('\n');
+    const jsFiles = jsFileNames;
+    
+    let mismatch = false;
+    let errorMsg = '';
+    
+    if (texFiles.length !== jsFiles.length) {
+        mismatch = true;
+        errorMsg += `Length mismatch: LaTeX selected ${texFiles.length} files, JS selected ${jsFiles.length} files\n`;
+    }
+    
+    const maxLen = Math.max(texFiles.length, jsFiles.length);
+    for (let i = 0; i < maxLen; i++) {
+        if (texFiles[i] !== jsFiles[i]) {
+            mismatch = true;
+            errorMsg += `Position ${i + 1}: LaTeX='${texFiles[i] || 'MISSING'}', JS='${jsFiles[i] || 'MISSING'}'\n`;
+        }
+    }
+    
+    if (mismatch) {
+        console.error('\n' + '='.repeat(80));
+        console.error('FATAL ERROR: Shuffled file lists do not match!');
+        console.error('='.repeat(80));
+        console.error(errorMsg);
+        console.error('LaTeX files:', texFiles.join(', '));
+        console.error('JS files:', jsFiles.join(', '));
+        console.error('='.repeat(80) + '\n');
+        process.exit(1);
+    } else {
+        console.log('✓ Validation passed: LaTeX and JS file lists match!');
+    }
+}
+const dirPath = path.resolve(__dirname, `${instructionDir}`);
+
+// Step 1: Concatenate all test files
+fs.writeFileSync(outputFilePath, '');
+
+// Check if utils.js exists and include it
+const utilsPath = './js_config/utils.js';
+if (fs.existsSync(utilsPath)) {
+    const data = fs.readFileSync(utilsPath, 'utf-8');
+    fs.appendFileSync(outputFilePath, data + '\n');
+    console.log('  ✓ Included utils.js');
+} else {
+    throw new Error("No utils!")
+}
+
+// Validate all test files exist before processing
+const missingFiles = [];
+for (const fileName of result) {
+    const filePath = path.join(dirPath, fileName);
+    if (!fs.existsSync(filePath)) {
+        missingFiles.push(filePath);
+    }
+}
+
+if (missingFiles.length > 0) {
+    console.error('\n❌ ERROR: Missing test files:');
+    missingFiles.forEach(file => console.error(`  - ${file}`));
+    console.error('\nPlease ensure all test files exist in the tests/ directory.\n');
     process.exit(1);
 }
 
-console.log("Shuffled JS files:", result);
-const dirPath = path.resolve(__dirname, `${instructionDir}`);
-
-try {
-    fs.writeFileSync(outputFilePath, '');
-    const data = fs.readFileSync('./js_config/utils.js', 'utf-8');
-    fs.appendFileSync(outputFilePath, data);
-
-    for (const fileName of result) {
-        const filePath = path.join(dirPath, fileName);
-        if (!fs.existsSync(filePath)) {
-            throw new Error(`File not found: ${filePath}`);
-        }
-
-        const fileContent = fs.readFileSync(filePath, 'utf8');
-        fs.appendFileSync(outputFilePath, `${fileContent} \n`);
-    }
-
-    console.log("All  files have been concatenated into:", outputFilePath);
-} catch (err) {
-    console.error('Error during concatenation:', err.message);
+// Process all test files
+for (const fileName of result) {
+    const filePath = path.join(dirPath, fileName);
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    fs.appendFileSync(outputFilePath, `${fileContent} \n`);
 }
 
+console.log("All files have been concatenated into:", outputFilePath);
+
+// Step 2: Extract function names and create mapping
+const concatenatedCode = fs.readFileSync(outputFilePath, 'utf8');
+const functionNames = extractFunctionNames(concatenatedCode);
+
+console.log(`Found ${functionNames.length} functions to obfuscate`);
+
+// Generate mapping: original -> obfuscated
+const mapping = {};
+const existingNames = new Set(); // Track generated names to prevent collisions
+
+functionNames.forEach(name => {
+    const obfuscatedName = generateObfuscatedName(name, seed, existingNames);
+    mapping[name] = obfuscatedName;
+    existingNames.add(obfuscatedName); // Add to set after generation
+});
+
+// Step 3: Rename functions in code
+const mangledCode = renameFunctionsInCode(concatenatedCode, mapping);
+const mangledFilePath = outputFilePath.replace('.js', '.mangled.js');
+fs.writeFileSync(mangledFilePath, mangledCode);
+console.log(`✓ Functions mangled: ${mangledFilePath}`);
+
+// Step 4: Save mapping for teacher (JSON)
+const teacherDir = 'teacher_only';
+if (!fs.existsSync(teacherDir)) {
+    fs.mkdirSync(teacherDir, { recursive: true });
+}
+const mappingFile = path.join(teacherDir, `mapping_${seed}.json`);
+fs.writeFileSync(mappingFile, JSON.stringify(mapping, null, 2));
+console.log(`✓ Mapping saved: ${mappingFile}`);
+
+// Step 5: Save mapping for LaTeX (TeX format)
+const buildDir = 'build';
+if (!fs.existsSync(buildDir)) {
+    fs.mkdirSync(buildDir, { recursive: true });
+}
+const texMappingFile = path.join(buildDir, `function_mapping_${seed}.tex`);
+const texMapping = Object.entries(mapping)
+    .map(([orig, obf]) => {
+        // Escape underscores for LaTeX
+        const escapedObf = obf.replace(/_/g, '\\_');
+        return `\\newcommand{\\func${orig}}{\\texttt{${escapedObf}}}`;
+    })
+    .join('\n');
+fs.writeFileSync(texMappingFile, texMapping);
+console.log(`✓ LaTeX mapping saved: ${texMappingFile}`);
+
+// Step 6: Generate student template
+const templateCode = generateStudentTemplate(mapping);
+const templateFilePath = outputFilePath.replace('.js', '.template.js');
+fs.writeFileSync(templateFilePath, templateCode);
+console.log(`✓ Student template created: ${templateFilePath}`);
+
+// Step 7: Display complete mapping
+console.log('\nComplete function mapping:');
+Object.entries(mapping).forEach(([orig, obf]) => {
+    console.log(`  ${orig} → ${obf}`);
+});
