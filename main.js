@@ -1,7 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const instructionDir = 'js_tests'  
+const config = require('./config/js/config_loader.js');
+
+// Load directories from config
+const instructionDir = config.getExercisesTestsDir();
 
 // ============================================================================
 // GLOBAL ERROR HANDLER
@@ -45,7 +48,6 @@ process.on('unhandledRejection', (reason, promise) => {
 function generateObfuscatedName(originalName, seed, existingNames = new Set()) {
     let attempt = 0;
     let hash, obfuscatedName;
-    
     do {
         // Combine seed with function name for unique hash per seed
         // Add attempt counter to handle collisions
@@ -56,13 +58,11 @@ function generateObfuscatedName(originalName, seed, existingNames = new Set()) {
             .substring(0, 8);
         obfuscatedName = `fn_${hash}`;
         attempt++;
-        
         // Safety limit to prevent infinite loop
         if (attempt > 1000) {
             throw new Error(`Could not generate unique name for ${originalName} after 1000 attempts`);
         }
     } while (existingNames.has(obfuscatedName));
-    
     return obfuscatedName;
 }
 
@@ -72,7 +72,6 @@ function generateObfuscatedName(originalName, seed, existingNames = new Set()) {
  */
 function extractFunctionNames(code) {
     const names = new Set();
-    
     // Method 1: Extract from test() calls: test('functionName', ...)
     const testMatches = code.matchAll(/test\s*\(\s*['"](\w+)['"]/g);
     for (const match of testMatches) {
@@ -81,7 +80,6 @@ function extractFunctionNames(code) {
             names.add(match[1]);
         }
     }
-    
     // Method 2: Extract from functions.xxx() calls
     const functionCallMatches = code.matchAll(/functions\.(\w+)\s*\(/g);
     for (const match of functionCallMatches) {
@@ -90,7 +88,6 @@ function extractFunctionNames(code) {
             names.add(match[1]);
         }
     }
-    
     // Method 3: Extract from module.exports (if present)
     const exportsMatch = code.match(/module\.exports\s*=\s*{([^}]+)}/s);
     if (exportsMatch) {
@@ -102,7 +99,6 @@ function extractFunctionNames(code) {
             }
         }
     }
-    
     // Method 4: Extract from module.exports.xxx = ...
     const individualExports = code.matchAll(/module\.exports\.(\w+)\s*=/g);
     for (const match of individualExports) {
@@ -110,7 +106,6 @@ function extractFunctionNames(code) {
             names.add(match[1]);
         }
     }
-    
     return Array.from(names).sort();
 }
 
@@ -119,52 +114,25 @@ function extractFunctionNames(code) {
  */
 function renameFunctionsInCode(code, mapping) {
     let result = code;
-    
     for (const [original, obfuscated] of Object.entries(mapping)) {
         // Replace: functions.originalName
         result = result.replace(
             new RegExp(`functions\\.${original}\\b`, 'g'),
             `functions.${obfuscated}`
         );
-        
         // Replace in test names: test('originalName', ...) -> test('obfuscated', ...)
         result = result.replace(
             new RegExp(`test\\s*\\(\\s*['"]${original}['"]`, 'g'),
             `test('${obfuscated}'`
         );
-        
         // Replace in exports: originalName, or originalName:
         result = result.replace(
             new RegExp(`\\b${original}\\s*([,:])`, 'g'),
             `${obfuscated}$1`
         );
     }
-    
-    return result;
-}
 
-/**
- * Generate student template file
- */
-function generateStudentTemplate(mapping) {
-    const lines = ['// Student Implementation Template', 
-                   '// Implement the following functions according to the PDF instructions',
-                   ''];
-    
-    for (const [original, obfuscated] of Object.entries(mapping)) {
-        lines.push(`// Function: ${obfuscated} (see PDF for requirements)`);
-        lines.push(`function ${obfuscated}() {`);
-        lines.push(`  // TODO: Implement this`);
-        lines.push(`  throw new Error('Not implemented');`);
-        lines.push(`}`);
-        lines.push('');
-    }
-    
-    lines.push('module.exports = {');
-    lines.push(Object.values(mapping).map(name => `  ${name}`).join(',\n'));
-    lines.push('};');
-    
-    return lines.join('\n');
+    return result;
 }
 
 // Helper: Convert string seed to a number for random generation
@@ -180,10 +148,10 @@ function seededRandom(seed) {
         const bigC = BigInt(c);
         const bigM = BigInt(m);
         const bigState = BigInt(state);
-        
+
         const newState = (bigA * bigState + bigC) % bigM;
         state = Number(newState);
-        
+
         return state / m;
     };
 }
@@ -217,22 +185,22 @@ function getJSFiles(seed, n) {
     if (n > files.length) {
         throw new Error(`N (${n}) exceeds number of available JS files (${files.length}).`);
     }
-    
+
     // Validate that test files match tex_exercises files
-    const texExercisesPath = path.resolve(__dirname, 'tex_exercises');
+    const texExercisesPath = path.resolve(__dirname, config.getExercisesTexDir());
     if (fs.existsSync(texExercisesPath)) {
         const texFiles = fs.readdirSync(texExercisesPath)
             .filter(file => file.endsWith('.tex'))
             .map(file => file.replace('.tex', ''));
-        
+
         const jsFiles = files.map(file => file.replace('.js', ''));
-        
+
         // Check if all tex files have corresponding js files
         const missingJs = texFiles.filter(name => !jsFiles.includes(name));
         const extraJs = jsFiles.filter(name => !texFiles.includes(name));
-        
+
         if (missingJs.length > 0 || extraJs.length > 0) {
-            let errorMsg = 'ERROR: File mismatch between tests/ and tex_exercises/\n';
+            let errorMsg = `ERROR: File mismatch between ${config.getExercisesTestsDir()}/ and ${config.getExercisesTexDir()}/\n`;
             if (missingJs.length > 0) {
                 errorMsg += `Missing .js files for: ${missingJs.slice(0, 5).join(', ')}`;
                 if (missingJs.length > 5) errorMsg += ` and ${missingJs.length - 5} more`;
@@ -245,10 +213,10 @@ function getJSFiles(seed, n) {
             throw new Error(errorMsg);
         }
     }
-    
+
     // Sort files alphabetically for deterministic ordering before shuffle
     files.sort();
-    
+
     let fileTables = files.map(removeExtension);
     const rng = seededRandom(parseInt(seed, 10));
     shuffle(fileTables, rng); // Shuffle using seed
@@ -281,52 +249,17 @@ const result = getJSFiles(seed, N);
 console.log("Shuffled JS files:", result);
 
 // Write JS shuffled files to output for validation
-const jsShuffledPath = 'build/js_shuffled_files.txt';
+const jsShuffledPath = config.getJsShuffledFilePath();
 const jsFileNames = result.map(f => f.replace('.js', ''));
 fs.writeFileSync(jsShuffledPath, jsFileNames.join('\n') + '\n');
 
-// Compare with Lua output if it exists
-const texShuffledPath = 'build/tex_shuffled_files.txt';
-if (fs.existsSync(texShuffledPath)) {
-    const texFiles = fs.readFileSync(texShuffledPath, 'utf8').trim().split('\n');
-    const jsFiles = jsFileNames;
-    
-    let mismatch = false;
-    let errorMsg = '';
-    
-    if (texFiles.length !== jsFiles.length) {
-        mismatch = true;
-        errorMsg += `Length mismatch: LaTeX selected ${texFiles.length} files, JS selected ${jsFiles.length} files\n`;
-    }
-    
-    const maxLen = Math.max(texFiles.length, jsFiles.length);
-    for (let i = 0; i < maxLen; i++) {
-        if (texFiles[i] !== jsFiles[i]) {
-            mismatch = true;
-            errorMsg += `Position ${i + 1}: LaTeX='${texFiles[i] || 'MISSING'}', JS='${jsFiles[i] || 'MISSING'}'\n`;
-        }
-    }
-    
-    if (mismatch) {
-        console.error('\n' + '='.repeat(80));
-        console.error('FATAL ERROR: Shuffled file lists do not match!');
-        console.error('='.repeat(80));
-        console.error(errorMsg);
-        console.error('LaTeX files:', texFiles.join(', '));
-        console.error('JS files:', jsFiles.join(', '));
-        console.error('='.repeat(80) + '\n');
-        process.exit(1);
-    } else {
-        console.log('✓ Validation passed: LaTeX and JS file lists match!');
-    }
-}
 const dirPath = path.resolve(__dirname, `${instructionDir}`);
 
 // Step 1: Concatenate all test files
 fs.writeFileSync(outputFilePath, '');
 
 // Check if utils.js exists and include it
-const utilsPath = './js_config/utils.js';
+const utilsPath = config.getUtilsPath();
 if (fs.existsSync(utilsPath)) {
     const data = fs.readFileSync(utilsPath, 'utf-8');
     fs.appendFileSync(outputFilePath, data + '\n');
@@ -347,7 +280,7 @@ for (const fileName of result) {
 if (missingFiles.length > 0) {
     console.error('\n❌ ERROR: Missing test files:');
     missingFiles.forEach(file => console.error(`  - ${file}`));
-    console.error('\nPlease ensure all test files exist in the tests/ directory.\n');
+    console.error(`\nPlease ensure all test files exist in the ${config.getExercisesTestsDir()}/ directory.\n`);
     process.exit(1);
 }
 
@@ -382,21 +315,12 @@ const mangledFilePath = outputFilePath.replace('.js', '.mangled.js');
 fs.writeFileSync(mangledFilePath, mangledCode);
 console.log(`✓ Functions mangled: ${mangledFilePath}`);
 
-// Step 4: Save mapping for teacher (JSON)
-const teacherDir = 'teacher_only';
-if (!fs.existsSync(teacherDir)) {
-    fs.mkdirSync(teacherDir, { recursive: true });
-}
-const mappingFile = path.join(teacherDir, `mapping_${seed}.json`);
-fs.writeFileSync(mappingFile, JSON.stringify(mapping, null, 2));
-console.log(`✓ Mapping saved: ${mappingFile}`);
-
-// Step 5: Save mapping for LaTeX (TeX format)
-const buildDir = 'build';
+// Step 4: Save mapping for LaTeX (TeX format)
+const buildDir = config.getBuildDir();
 if (!fs.existsSync(buildDir)) {
     fs.mkdirSync(buildDir, { recursive: true });
 }
-const texMappingFile = path.join(buildDir, `function_mapping_${seed}.tex`);
+const texMappingFile = config.getFunctionMappingPath(seed);
 const texMapping = Object.entries(mapping)
     .map(([orig, obf]) => {
         // Escape underscores for LaTeX
@@ -407,13 +331,7 @@ const texMapping = Object.entries(mapping)
 fs.writeFileSync(texMappingFile, texMapping);
 console.log(`✓ LaTeX mapping saved: ${texMappingFile}`);
 
-// Step 6: Generate student template
-const templateCode = generateStudentTemplate(mapping);
-const templateFilePath = outputFilePath.replace('.js', '.template.js');
-fs.writeFileSync(templateFilePath, templateCode);
-console.log(`✓ Student template created: ${templateFilePath}`);
-
-// Step 7: Display complete mapping
+// Step 5: Display complete mapping
 console.log('\nComplete function mapping:');
 Object.entries(mapping).forEach(([orig, obf]) => {
     console.log(`  ${orig} → ${obf}`);

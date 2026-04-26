@@ -1,0 +1,52 @@
+{
+  "directories": {
+    "exercises": {
+      "tex": "exercises/tex",
+      "tests": "exercises/tests"
+    },
+    "config": {
+      "tex": "config/tex",
+      "lua": "config/lua",
+      "js": "config/js"
+    },
+    "output": {
+      "pdf": "output/pdf",
+      "test": "output/tests",
+      "zip": "output/zip"
+    },
+    "build": "build"
+  },
+  "files": {
+    "main": {
+      "tex": "main.tex",
+      "js": "main.js"
+    },
+    "utils": "utils.js",
+    "obfuscatorConfig": "obfuscator_config.json",
+    "shuffledFiles": {
+      "tex": "tex_shuffled_files.txt",
+      "js": "js_shuffled_files.txt"
+    },
+    "functionMapping": "function_mapping_{seed}.tex",
+    "studentFunctions": "functions.js"
+  },
+  "texConfig": {
+    "includes": [
+      "get_random_exercises",
+      "copy_protect",
+      "copyright",
+      "plagiarism",
+      "preambule"
+    ],
+    "instructions": {
+      "pl": "pre_instruction_pl",
+      "eng": "pre_instruction_eng"
+    }
+  },
+  "luaConfig": {
+    "scripts": {
+      "randomExercises": "get_random_exercises.lua",
+      "copyProtect": "copy_protect.lua"
+    }
+  }
+}
