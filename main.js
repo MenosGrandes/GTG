@@ -106,7 +106,7 @@ function extractFunctionNames(code) {
             names.add(match[1]);
         }
     }
-    //validates names only
+        //validates names only
     names.forEach(name => {
         if (!/^[A-Za-z]+$/.test(name)) {
             throw new Error(`Function name \'${name}\' is forbidden. use letters only`)
@@ -249,7 +249,7 @@ if (N <= 0) {
     console.error("N must be a positive integer.");
     process.exit(1);
 }
-const outputDirPath = process.argv[4];
+const outputFilePath = process.argv[4];
 
 const result = getJSFiles(seed, N);
 
@@ -262,6 +262,18 @@ fs.writeFileSync(jsShuffledPath, jsFileNames.join('\n') + '\n');
 
 const dirPath = path.resolve(__dirname, `${instructionDir}`);
 
+// Step 1: Concatenate all test files
+fs.writeFileSync(outputFilePath, '');
+
+// Check if utils.js exists and include it
+const utilsPath = config.getUtilsPath();
+if (fs.existsSync(utilsPath)) {
+    const data = fs.readFileSync(utilsPath, 'utf-8');
+    fs.appendFileSync(outputFilePath, data + '\n');
+    console.log('  ✓ Included utils.js');
+} else {
+    throw new Error("No utils!")
+}
 
 // Validate all test files exist before processing
 const missingFiles = [];
@@ -278,37 +290,39 @@ if (missingFiles.length > 0) {
     console.error(`\nPlease ensure all test files exist in the ${config.getExercisesTestsDir()}/ directory.\n`);
     process.exit(1);
 }
-const existingNames = new Set(); // Track generated names to prevent collisions
-const mapping = {};
-
-
-const getUtilCode = () => {
-    // Check if utils.js exists and include it
-    const utilsPath = config.getUtilsPath();
-    if (fs.existsSync(utilsPath)) {
-        const data = fs.readFileSync(utilsPath, 'utf-8');
-        console.log('  ✓ Included utils.js');
-        return data;
-    } else {
-        throw new Error("No utils!")
-    }
-}
-const utilCode = getUtilCode();
 
 // Process all test files
 for (const fileName of result) {
     const filePath = path.join(dirPath, fileName);
     const fileContent = fs.readFileSync(filePath, 'utf8');
-    const functionName = extractFunctionNames(fileContent);
-    const obfuscatedName = generateObfuscatedName(functionName, seed, existingNames);
-    mapping[functionName] = obfuscatedName;
-    existingNames.add(obfuscatedName); // Add to set after generation
-    const mangledCode = renameFunctionsInCode(fileContent, mapping);
-    const source_file = path.join(outputDirPath, `${obfuscatedName}.test.js`)
-    fs.writeFileSync(source_file, `${utilCode} \n ${mangledCode} \n`);
-
+    fs.appendFileSync(outputFilePath, `${fileContent} \n`);
 }
 
+console.log("All files have been concatenated into:", outputFilePath);
+
+// Step 2: Extract function names and create mapping
+const concatenatedCode = fs.readFileSync(outputFilePath, 'utf8');
+const functionNames = extractFunctionNames(concatenatedCode);
+
+console.log(`Found ${functionNames.length} functions to obfuscate`);
+
+// Generate mapping: original -> obfuscated
+const mapping = {};
+const existingNames = new Set(); // Track generated names to prevent collisions
+
+functionNames.forEach(name => {
+    const obfuscatedName = generateObfuscatedName(name, seed, existingNames);
+    mapping[name] = obfuscatedName;
+    existingNames.add(obfuscatedName); // Add to set after generation
+});
+
+// Step 3: Rename functions in code
+const mangledCode = renameFunctionsInCode(concatenatedCode, mapping);
+const mangledFilePath = outputFilePath.replace('.js', '.mangled.js');
+fs.writeFileSync(mangledFilePath, mangledCode);
+console.log(`✓ Functions mangled: ${mangledFilePath}`);
+
+// Step 4: Save mapping for LaTeX (TeX format)
 const buildDir = config.getBuildDir();
 if (!fs.existsSync(buildDir)) {
     fs.mkdirSync(buildDir, { recursive: true });
@@ -319,7 +333,6 @@ const texMapping = Object.entries(mapping)
         // Escape underscores for LaTeX
         const escapedObf = obf.replace(/_/g, '\\_');
         return `\\newcommand{\\func${orig}}{\\texttt{${escapedObf}}}`;
-
     })
     .join('\n');
 fs.writeFileSync(texMappingFile, texMapping);
@@ -330,5 +343,3 @@ console.log('\nComplete function mapping:');
 Object.entries(mapping).forEach(([orig, obf]) => {
     console.log(`  ${orig} → ${obf}`);
 });
-
-
