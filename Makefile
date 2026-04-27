@@ -46,6 +46,8 @@ $(PDF_DIR):
 
 $(TEST_DIR):
 	@mkdir -p $(TEST_DIR)
+	@mkdir -p $(TEST_DIR)/OBFUSCATED
+	@mkdir -p $(TEST_DIR)/SOURCE_CODE
 
 $(ZIP_OUTPUT_DIR):
 	@mkdir -p $(ZIP_OUTPUT_DIR)
@@ -122,17 +124,17 @@ compile_js:  check-tools dirs
 	@echo "═══════════════════════════════════════════════════════════"
 	@echo "  → SEED: $(SEED), COUNT: $(COUNT)"
 	@echo ""
-	$(NODE_JS) $(MAIN_JS_FILE) $(SEED) $(COUNT) '$(TEST_DIR)/$(MAIN_FILE).js' || exit 1
+	$(NODE_JS) $(MAIN_JS_FILE) $(SEED) $(COUNT) $(TEST_DIR)/SOURCE_CODE || exit 1
 	@echo ""
 	@echo "  → Installing dependencies..."
 	$(NPM) install --silent 2>&1 | grep -v "^npm" | sed 's/^/    /' || true
 	@echo "  → Obfuscating code..."
-	$(OBFUSCATOR) --config '$(JS_CONFIG_DIR)/obfuscator_config.json' $(TEST_DIR)/$(MANGLED_JS_FILE) --output $(TEST_DIR)/$(OUTPUT_JS_FILE) || exit 1
+	$(OBFUSCATOR) --config '$(JS_CONFIG_DIR)/obfuscator_config.json' $(TEST_DIR)/SOURCE_CODE --output $(TEST_DIR)/OBFUSCATED || exit 1
 	@echo ""
 	@echo "  ✓ Test file: $(TEST_DIR)/$(OUTPUT_JS_FILE)"
 	@echo ""
 
-compile:   compile_js compile_pdf
+compile:   clean_output compile_js compile_pdf
 
 create_zip:  compile
 	@echo ""
@@ -140,9 +142,10 @@ create_zip:  compile
 	@echo "  Creating ZIP Archive"
 	@echo "═══════════════════════════════════════════════════════════"
 	@echo "  → Packaging: $(ZIP_OUTPUT_DIR)/$(ZIP_OUTPUT_FILE)"
-	@zip -q -j $(ZIP_OUTPUT_DIR)/$(ZIP_OUTPUT_FILE) $(TEST_DIR)/$(OUTPUT_JS_FILE)
+	@zip -q -j -r $(ZIP_OUTPUT_DIR)/$(ZIP_OUTPUT_FILE) $(TEST_DIR)/OBFUSCATED
 	@echo "  ✓ Archive ready: $(ZIP_OUTPUT_DIR)/$(ZIP_OUTPUT_FILE)"
 	@echo ""
+
 move_zip:
 	@echo ""
 	@echo "═══════════════════════════════════════════════════════════"
@@ -159,7 +162,7 @@ move_pdf:
 	@mv $(PDF_DIR)/$(MAIN_FILE).pdf $(SEED_OUTPUT_DIR)/$(MAIN_FILE).pdf
 	@echo "  ✓ PDF ready: $(SEED_OUTPUT_DIR)/$(MAIN_FILE).pdf"
 
-create: $(SEED_OUTPUT_DIR) create_zip move_zip move_pdf
+create:  create_zip move_zip move_pdf
 	@echo ""
 	@echo "═══════════════════════════════════════════════════════════"
 	@echo "  Creating solution"
@@ -169,7 +172,14 @@ create: $(SEED_OUTPUT_DIR) create_zip move_zip move_pdf
 
 	@echo "  ✓ Solution for student ready: $(SEED_OUTPUT_DIR)"
 
-	
+clean_output:
+	@echo ""
+	@echo "═══════════════════════════════════════════════════════════"
+	@echo "  Cleaning output files..."
+	@echo "═══════════════════════════════════════════════════════════"
+	@rm -rf $(OUTPUT_DIR)/*
+	@echo "  ✓ All folders cleaned"
+	@echo ""	
 
 clean:
 	@echo ""
@@ -223,4 +233,4 @@ help:
 
 all: create
 
-.PHONY: all compile_pdf version clean distclean help dirs compile_js compile create_zip load-config create
+.PHONY: all compile_pdf version clean distclean help dirs compile_js compile create_zip load-config create clean_output

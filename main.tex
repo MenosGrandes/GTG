@@ -27,12 +27,13 @@
 \makeatletter
 \def\func#1{%
     \@ifundefined{func#1}{%
-        \texttt{#1}% Fallback: show original name
+        \texttt{DUPA #1}% Fallback: show original name
     }{%
         \csname func#1\endcsname% Use obfuscated name if defined
     }%
 }
 \makeatother
+
 
 \begin{document}
 	\date{\monthyearcmd}
@@ -46,6 +47,8 @@
 
 
 \usePlagiarism
+
+
 \inputexercises{\myseed}{\mycount}
 \useCopyright
 
