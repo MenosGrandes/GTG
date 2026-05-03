@@ -48,5 +48,6 @@
       "randomExercises": "get_random_exercises.lua",
       "copyProtect": "copy_protect.lua"
     }
-  }
+  },
+  "mangled" : false
 }

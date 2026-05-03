@@ -84,6 +84,9 @@ class ConfigLoader {
     getConfig() {
         return this.config;
     }
+    getMangled(){
+        return this.config.mangled;
+    }
 }
 
 // Export singleton instance
