@@ -105,6 +105,28 @@
   after skip=0pt,
   #1
 }
+\newtcolorbox{errorbox}[1][]{
+  colback=red!10,
+  colframe=pink!70!black,
+  fonttitle=\huge\bfseries,
+  fontupper=\Huge\color{red},
+  boxrule=1pt,
+  arc=4pt,
+  leftrule=2pt,
+  top=10mm,
+  bottom=10mm,
+  left=10mm,
+  right=10mm,
+  center title,
+  halign=center,
+  valign=center,
+  height=\textheight,
+  width=\textwidth,
+  before skip=0pt,
+  after skip=0pt,
+  #1
+}
+
 \graphicspath{ {config/tex/img/} }
 \newcounter{zadanieCounter}
 

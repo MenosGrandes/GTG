@@ -49,5 +49,6 @@
       "copyProtect": "copy_protect.lua"
     }
   },
-  "mangled" : false
+  "mangled" : true,
+  "debug": false
 }

@@ -33,8 +33,9 @@ function main() {
     // Select and shuffle files
     const selector = new FileSelector(testsDir, texDir);
     const selectedFiles = selector.getFiles(seed, n);
-    console.log('Shuffled JS files:', selectedFiles);
-
+    if (config.getDebug()) {
+        console.log('Shuffled JS files:', selectedFiles);
+    }
     // Write shuffled file list
     fs.writeFileSync(
         config.getJsShuffledFilePath(),
@@ -62,9 +63,10 @@ function main() {
 
         LatexExporter.saveMapping(mapping, config.getFunctionMappingPath(seed));
         console.log(`✓ LaTeX mapping saved`);
-
-        console.log('\nFunction mapping:');
-        Object.entries(mapping).forEach(([orig, obf]) => console.log(`  ${orig} → ${obf}`));
+        if (config.getDebug()) {
+            console.log('\nFunction mapping:');
+            Object.entries(mapping).forEach(([orig, obf]) => console.log(`  ${orig} → ${obf}`));
+        }
     } else {
         fs.writeFileSync(mangledPath, concatenatedCode);
         console.log(`✓ No mangling, copied to: ${mangledPath}`);
