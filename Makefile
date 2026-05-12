@@ -1,5 +1,7 @@
 # Makefile for LuaLaTeX Exercise Generator
 
+include config/make/colors.mk
+
 # Configuration file
 CONFIG_FILE = project.config.json
 
@@ -16,7 +18,8 @@ PDF_DIR = $(OUTPUT_DIR)/pdf
 TEST_DIR = $(OUTPUT_DIR)/tests
 ZIP_OUTPUT_DIR = $(OUTPUT_DIR)/zip
 SEED_OUTPUT_DIR = $(OUTPUT_DIR)/$(SEED)
-JS_CONFIG_DIR = $(CONFIG_DIR)/js
+CORE_DIR = $(CONFIG_DIR)/core
+PLUGINS_DIR = $(CONFIG_DIR)/plugins
 LUA_CONFIG_DIR = $(CONFIG_DIR)/lua
 TEX_CONFIG_DIR = $(CONFIG_DIR)/tex
 
@@ -71,7 +74,7 @@ load-config:
 	$(eval PDF_DIR := $(OUTPUT_DIR)/pdf)
 	$(eval TEST_DIR := $(OUTPUT_DIR)/tests)
 	$(eval ZIP_OUTPUT_DIR := $(OUTPUT_DIR)/zip)
-	$(eval JS_CONFIG_DIR := $(CONFIG_DIR)/js)
+	$(eval PLUGINS_DIR := $(CONFIG_DIR)/plugins)
 	$(eval LUA_CONFIG_DIR := $(CONFIG_DIR)/lua)
 	$(eval TEX_CONFIG_DIR := $(CONFIG_DIR)/tex)
 	@echo "Config loaded: BUILD_DIR=$(BUILD_DIR) OUTPUT_DIR=$(OUTPUT_DIR) CONFIG_DIR=$(CONFIG_DIR)"
@@ -89,22 +92,14 @@ define run_lualatex
 		  echo "Full log: $(BUILD_DIR)/$(1).log"; exit 1; }
 endef
 
-# ─── Build targets ────────────────────────────────────────────────────────────
-compile_js: check-tools | $(BUILD_DIR) $(TEST_DIR)
-	$(call header,Building JavaScript Tests)
-	@if [ "$$($(NODE_JS) -e "process.stdout.write(String(JSON.parse(require('fs').readFileSync('$(CONFIG_FILE)','utf8')).checkDuplicates))")" = "false" ]; then \
-		echo "\033[31m  ⚠ Duplication finder is set to OFF\033[0m"; \
-	elif [ -f $(BUILD_DIR)/.duplicates_checked ]; then \
-		echo "\033[33m  ℹ Duplication check skipped (already passed)\033[0m"; \
-	fi
-	@echo "  → SEED: $(SEED), COUNT: $(COUNT)"
-	$(NODE_JS) $(MAIN_JS_FILE) $(SEED) $(COUNT) '$(TEST_DIR)/$(MAIN_FILE).js'
-	@echo "  → Installing dependencies..."
-	@$(NPM) install --silent 2>&1 | grep -v "^npm" || true
-	@echo "  → Obfuscating code..."
-	$(OBFUSCATOR) --config '$(JS_CONFIG_DIR)/obfuscator_config.json' \
-		$(TEST_DIR)/$(MANGLED_JS_FILE) --output $(TEST_DIR)/$(OUTPUT_JS_FILE)
-	@echo "  ✓ Test file: $(TEST_DIR)/$(OUTPUT_JS_FILE)"
+# ─── Language detection ────────────────────────────────────────────────────────
+LANGUAGE = $(shell $(NODE_JS) -e "process.stdout.write(JSON.parse(require('fs').readFileSync('$(CONFIG_FILE)','utf8')).language)")
+ifeq ($(wildcard $(PLUGINS_DIR)/$(LANGUAGE)/Makefile.mk),)
+$(error Unsupported language '$(LANGUAGE)'. No Makefile.mk found at $(PLUGINS_DIR)/$(LANGUAGE)/)
+endif
+
+# ─── Build targets (language-specific) ────────────────────────────────────────
+include $(PLUGINS_DIR)/$(LANGUAGE)/Makefile.mk
 
 compile_pdf: check-tools | $(BUILD_DIR) $(PDF_DIR)
 	$(call header,Building PDF with LuaLaTeX)
@@ -113,7 +108,7 @@ compile_pdf: check-tools | $(BUILD_DIR) $(PDF_DIR)
 	@mv $(BUILD_DIR)/$(MAIN_FILE).pdf $(PDF_DIR)/$(MAIN_FILE).pdf
 	@echo "  ✓ PDF created: $(PDF_DIR)/$(MAIN_FILE).pdf"
 
-compile: compile_js compile_pdf
+compile: compile_tests compile_pdf
 
 # ─── Package targets ──────────────────────────────────────────────────────────
 create_zip: compile | $(ZIP_OUTPUT_DIR)
@@ -135,7 +130,7 @@ random_seeds:
 	@for i in $$(seq 1 $(N)); do \
 		RSEED=$$($(NODE_JS) -e "console.log(Math.floor(Math.random()*999999)+1)"); \
 		echo "  → Building with SEED=$$RSEED COUNT=$(COUNT)"; \
-		$(MAKE) --no-print-directory create SEED=$$RSEED COUNT=$(COUNT); \
+		$(MAKE) --no-print-directory create SEED=$$RSEED COUNT=$(COUNT) || exit 1; \
 	done
 	@echo "  ✓ Generated $(N) solutions"
 
@@ -167,7 +162,7 @@ help:
 	@echo "  all (default)    Full pipeline: compile → zip → move to seed dir"
 	@echo "  compile          Build both PDF and JS"
 	@echo "  compile_pdf      Build only PDF"
-	@echo "  compile_js       Build only JS (obfuscated)"
+	@echo "  compile_tests    Build tests (dispatches to language target)"
 	@echo "  create_zip       Compile and create zip archive"
 	@echo "  create           Full pipeline (same as 'all')"
 	@echo "  clean_output     Remove output directory"
@@ -185,4 +180,4 @@ help:
 	@echo "Defaults: SEED=$(SEED), COUNT=$(COUNT)"
 	@echo "Dirs:     build=$(BUILD_DIR) output=$(OUTPUT_DIR) config=$(CONFIG_DIR)"
 
-.PHONY: all compile_pdf compile_js compile create_zip create random_seeds check-node check-luatex check-tools load-config clean_output clean_build distclean npm_clean help
+.PHONY: all compile_pdf compile_tests compile create_zip create random_seeds check-node check-luatex check-tools load-config clean_output clean_build distclean npm_clean help

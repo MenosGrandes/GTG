@@ -53,5 +53,6 @@
   },
   "mangled": false,
   "debug": false,
-  "checkDuplicates": true
+  "checkDuplicates": true,
+  "language": "javascript"
 }

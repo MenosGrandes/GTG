@@ -1,8 +1,7 @@
 import { copyFileSync } from 'node:fs';
-import config from './config/js/config_loader.js';
-import { FileSelector } from './config/js/src/file_selector.js';
-import { TestConcatenator } from './config/js/src/test_concatenator.js';
-import { FunctionObfuscator } from './config/js/src/function_obfuscator.js';
+import config from './config/core/config_loader.js';
+import { FileSelector } from './config/core/file_selector.js';
+import { getPlugin } from './config/core/plugin_registry.js';
 
 process.on('uncaughtException', (err) => {
     console.error(`\nFATAL ERROR:\n${err.message}\n${err.stack}\n`);
@@ -40,17 +39,17 @@ function parseArgs() {
 }
 
 const { seed, n, outputFilePath } = parseArgs();
+const plugin = getPlugin(config.getLanguage());
 
-const selector = new FileSelector(config);
+const selector = new FileSelector(config, plugin);
 const selectedFiles = selector.getFiles(seed, n);
 
-const concatenator = new TestConcatenator(selector.testsDir, config.getUtilsPath());
-concatenator.concatenate(selectedFiles, outputFilePath);
+plugin.concatenate(selectedFiles, selector.testsDir, plugin.getUtilsPath(), outputFilePath);
 
-const mangledPath = outputFilePath.replace('.js', '.mangled.js');
-if (config.getMangled()) {
-    const obfuscator = new FunctionObfuscator(seed);
-    obfuscator.mangleFile(outputFilePath, mangledPath, config.getFunctionMappingPath(seed));
+if (config.getMangled() && plugin.supportsObfuscation) {
+    const mangledPath = outputFilePath.replace(plugin.extension, '.mangled' + plugin.extension);
+    plugin.obfuscate(seed, outputFilePath, mangledPath, config.getFunctionMappingPath(seed));
 } else {
+    const mangledPath = outputFilePath.replace(plugin.extension, '.mangled' + plugin.extension);
     copyFileSync(outputFilePath, mangledPath);
 }
