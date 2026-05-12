@@ -5,11 +5,13 @@
       "tests": "exercises/tests"
     },
     "config": {
+      "base": "config",
       "tex": "config/tex",
       "lua": "config/lua",
       "js": "config/js"
     },
     "output": {
+      "base": "output",
       "pdf": "output/pdf",
       "test": "output/tests",
       "zip": "output/zip"
@@ -49,6 +51,7 @@
       "copyProtect": "copy_protect.lua"
     }
   },
-  "mangled" : true,
-  "debug": false
+  "mangled": false,
+  "debug": false,
+  "checkDuplicates": true
 }

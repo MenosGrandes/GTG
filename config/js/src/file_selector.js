@@ -1,37 +1,106 @@
-const fs = require('fs');
-const path = require('path');
+import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
+import { resolve, join, dirname } from 'node:path';
 
-class FileSelector {
-    constructor(testsDir, texDir) {
-        this.testsDir = testsDir;
-        this.texDir = texDir;
+function seededRandom(seed) {
+    const a = 1103515245n;
+    const c = 12345n;
+    const m = 2147483648n;
+    let state = BigInt(seed);
+
+    return () => {
+        state = (a * state + c) % m;
+        return Number(state) / Number(m);
+    };
+}
+
+function shuffle(array, rng) {
+    for (let i = array.length; i >= 2; i--) {
+        const j = Math.floor(rng() * i) + 1;
+        [array[i - 1], array[j - 1]] = [array[j - 1], array[i - 1]];
+    }
+    return array;
+}
+
+export class FileSelector {
+    #configLoader;
+    #testsDir;
+    #texDir;
+
+    constructor(configLoader) {
+        if (!configLoader) {
+            throw new Error('FileSelector requires a configLoader instance');
+        }
+        this.#configLoader = configLoader;
+        this.#testsDir = resolve(configLoader.getExercisesTestsDir());
+        this.#texDir = resolve(configLoader.getExercisesTexDir());
     }
 
-    getFiles(seed, n) {
-        const dirPath = path.resolve(this.testsDir);
-        let files = fs.readdirSync(dirPath).filter(f => f.endsWith('.js'));
+    get testsDir() { return this.#testsDir; }
 
+    getFiles(seed, n) {
+        const files = this.#loadFiles();
+        this.#validate(files);
+        const selected = this.#select(files, seed, n);
+        this.#persist(selected);
+        return selected;
+    }
+
+    #loadFiles() {
+        const files = readdirSync(this.#testsDir).filter(f => f.endsWith('.js'));
         if (files.length === 0) {
-            throw new Error(`No .js files found in ${this.testsDir}`);
+            throw new Error(`No .js files found in ${this.#testsDir}`);
         }
+        return files;
+    }
+
+    #validate(files) {
+        this.#validateMatchingTexFiles(files);
+        if (this.#shouldCheckDuplicates()) {
+            this.#validateNoDuplicateNames(files);
+            this.#markDuplicatesChecked();
+        }
+    }
+
+    #select(files, seed, n) {
         if (n > files.length) {
             throw new Error(`N (${n}) exceeds available JS files (${files.length})`);
         }
 
-        this._validateMatchingTexFiles(files);
-
         files.sort();
         const names = files.map(f => f.replace('.js', ''));
-        const rng = FileSelector._seededRandom(parseInt(seed, 10));
-        FileSelector._shuffle(names, rng);
+        const rng = seededRandom(seed);
+        shuffle(names, rng);
 
         return names.slice(0, n).map(name => name + '.js');
     }
 
-    _validateMatchingTexFiles(jsFiles) {
-        if (!this.texDir || !fs.existsSync(this.texDir)) return;
+    #persist(selected) {
+        const listPath = this.#configLoader.getJsShuffledFilePath();
+        mkdirSync(dirname(listPath), { recursive: true });
+        writeFileSync(listPath, selected.map(f => f.replace('.js', '')).join('\n') + '\n');
+    }
 
-        const texNames = fs.readdirSync(this.texDir)
+    #validateNoDuplicateNames(jsFiles) {
+        const nameToFiles = {};
+        for (const file of jsFiles) {
+            const content = readFileSync(join(this.#testsDir, file), 'utf8');
+            for (const m of content.matchAll(/functions\.([A-Za-z]+)/g)) {
+                (nameToFiles[m[1]] ??= new Set()).add(file);
+            }
+        }
+        const duplicates = Object.entries(nameToFiles).filter(([, files]) => files.size > 1);
+        if (duplicates.length > 0) {
+            const details = duplicates.map(([name, files]) =>
+                `  "${name}" in: ${[...files].join(', ')}`
+            ).join('\n');
+            throw new Error(`Duplicate function/class names across test files:\n${details}`);
+        }
+    }
+
+    #validateMatchingTexFiles(jsFiles) {
+        if (!existsSync(this.#texDir)) return;
+
+        const texNames = readdirSync(this.#texDir)
             .filter(f => f.endsWith('.tex'))
             .map(f => f.replace('.tex', ''));
         const jsNames = jsFiles.map(f => f.replace('.js', ''));
@@ -54,25 +123,15 @@ class FileSelector {
         throw new Error(msg);
     }
 
-    static _seededRandom(seed) {
-        const a = BigInt(1103515245);
-        const c = BigInt(12345);
-        const m = BigInt(2147483648);
-        let state = BigInt(seed);
-
-        return function () {
-            state = (a * state + c) % m;
-            return Number(state) / Number(m);
-        };
+    #shouldCheckDuplicates() {
+        if (!this.#configLoader.getCheckDuplicates()) return false;
+        const flagPath = join(this.#configLoader.getBuildDir(), '.duplicates_checked');
+        return !existsSync(flagPath);
     }
 
-    static _shuffle(array, rng) {
-        for (let i = array.length; i >= 2; i--) {
-            const j = Math.floor(rng() * i) + 1;
-            [array[i - 1], array[j - 1]] = [array[j - 1], array[i - 1]];
-        }
-        return array;
+    #markDuplicatesChecked() {
+        const buildDir = this.#configLoader.getBuildDir();
+        mkdirSync(buildDir, { recursive: true });
+        writeFileSync(join(buildDir, '.duplicates_checked'), '');
     }
 }
-
-module.exports = FileSelector;

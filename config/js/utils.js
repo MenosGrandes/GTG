@@ -29,3 +29,9 @@ function __mg__getRandomInt(min, max) {
 function __mg_randomInt(min, max) {
   return (Math.random() * (Math.ceil(max) - Math.ceil(min)) | 0) + Math.ceil(min);
 }
+
+// Random float in [min, max) with given decimal places
+function __mg_randomFloat(min, max, decimals) {
+  const val = Math.random() * (max - min) + min;
+  return decimals !== undefined ? Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals) : val;
+}

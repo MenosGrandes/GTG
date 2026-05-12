@@ -1,38 +1,37 @@
-const fs = require('fs');
-const path = require('path');
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 
-class TestConcatenator {
+export class TestConcatenator {
+    #testsDir;
+    #utilsPath;
+
     constructor(testsDir, utilsPath) {
-        this.testsDir = testsDir;
-        this.utilsPath = utilsPath;
+        this.#testsDir = testsDir;
+        this.#utilsPath = utilsPath;
     }
 
     concatenate(fileNames, outputPath) {
-        this._validateFilesExist(fileNames);
+        this.#validateFilesExist(fileNames);
 
-        fs.writeFileSync(outputPath, '');
-
-        if (!fs.existsSync(this.utilsPath)) {
-            throw new Error(`Utils file not found: ${this.utilsPath}`);
+        if (!existsSync(this.#utilsPath)) {
+            throw new Error(`Utils file not found: ${this.#utilsPath}`);
         }
-        fs.appendFileSync(outputPath, fs.readFileSync(this.utilsPath, 'utf-8') + '\n');
 
+        const parts = [readFileSync(this.#utilsPath, 'utf8')];
         for (const fileName of fileNames) {
-            const filePath = path.join(this.testsDir, fileName);
-            fs.appendFileSync(outputPath, fs.readFileSync(filePath, 'utf8') + ' \n');
+            parts.push(readFileSync(join(this.#testsDir, fileName), 'utf8'));
         }
 
+        writeFileSync(outputPath, parts.join('\n'));
         return outputPath;
     }
 
-    _validateFilesExist(fileNames) {
-        const missing = fileNames.filter(f => !fs.existsSync(path.join(this.testsDir, f)));
+    #validateFilesExist(fileNames) {
+        const missing = fileNames.filter(f => !existsSync(join(this.#testsDir, f)));
         if (missing.length > 0) {
             throw new Error(
-                `Missing test files:\n${missing.map(f => `  - ${path.join(this.testsDir, f)}`).join('\n')}`
+                `Missing test files:\n${missing.map(f => `  - ${join(this.#testsDir, f)}`).join('\n')}`
             );
         }
     }
 }
-
-module.exports = TestConcatenator;

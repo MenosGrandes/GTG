@@ -1,22 +1,12 @@
-#!/usr/bin/env node
-/**
- * Read configuration for Makefile
- * Outputs: BUILD_DIR OUTPUT_DIR CONFIG_DIR
- */
+import { readFileSync } from 'node:fs';
 
 try {
-    const config = require('./project.config.json');
+    const config = JSON.parse(readFileSync('./project.config.json', 'utf8'));
     const dirs = config.directories;
-    
-    // Extract base directories
-    const outputDir = dirs.output.pdf.split('/')[0]; // Get 'output' from 'output/pdf'
-    const configDir = dirs.config.js.split('/')[0];  // Get 'config' from 'config/js'
-    
     console.log(dirs.build);
-    console.log(outputDir);
-    console.log(configDir);
-} catch (e) {
-    // Fallback defaults
+    console.log(dirs.output.base);
+    console.log(dirs.config.base);
+} catch {
     console.log('build');
     console.log('output');
     console.log('config');

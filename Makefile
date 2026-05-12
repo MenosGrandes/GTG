@@ -6,6 +6,7 @@ CONFIG_FILE = project.config.json
 # Default values (can be overridden via command line or load-config)
 SEED ?= 12
 COUNT ?= 3
+N ?= 1
 
 # Directory layout
 BUILD_DIR = build
@@ -91,6 +92,11 @@ endef
 # ─── Build targets ────────────────────────────────────────────────────────────
 compile_js: check-tools | $(BUILD_DIR) $(TEST_DIR)
 	$(call header,Building JavaScript Tests)
+	@if [ "$$($(NODE_JS) -e "process.stdout.write(String(JSON.parse(require('fs').readFileSync('$(CONFIG_FILE)','utf8')).checkDuplicates))")" = "false" ]; then \
+		echo "\033[31m  ⚠ Duplication finder is set to OFF\033[0m"; \
+	elif [ -f $(BUILD_DIR)/.duplicates_checked ]; then \
+		echo "\033[33m  ℹ Duplication check skipped (already passed)\033[0m"; \
+	fi
 	@echo "  → SEED: $(SEED), COUNT: $(COUNT)"
 	$(NODE_JS) $(MAIN_JS_FILE) $(SEED) $(COUNT) '$(TEST_DIR)/$(MAIN_FILE).js'
 	@echo "  → Installing dependencies..."
@@ -122,6 +128,16 @@ create: create_zip | $(SEED_OUTPUT_DIR)
 	@test -f $(SEED_OUTPUT_DIR)/$(ZIP_OUTPUT_FILE) || { echo "Error: ZIP not found at $(SEED_OUTPUT_DIR)/$(ZIP_OUTPUT_FILE)"; exit 1; }
 	@test -f $(SEED_OUTPUT_DIR)/$(MAIN_FILE).pdf || { echo "Error: PDF not found at $(SEED_OUTPUT_DIR)/$(MAIN_FILE).pdf"; exit 1; }
 	@echo "  ✓ Solution ready: $(SEED_OUTPUT_DIR)/"
+
+# ─── Batch with random seeds ──────────────────────────────────────────────────
+random_seeds:
+	$(call header,Generating $(N) random seeds)
+	@for i in $$(seq 1 $(N)); do \
+		RSEED=$$($(NODE_JS) -e "console.log(Math.floor(Math.random()*999999)+1)"); \
+		echo "  → Building with SEED=$$RSEED COUNT=$(COUNT)"; \
+		$(MAKE) --no-print-directory create SEED=$$RSEED COUNT=$(COUNT); \
+	done
+	@echo "  ✓ Generated $(N) solutions"
 
 # ─── Clean targets ────────────────────────────────────────────────────────────
 clean_output:
@@ -169,4 +185,4 @@ help:
 	@echo "Defaults: SEED=$(SEED), COUNT=$(COUNT)"
 	@echo "Dirs:     build=$(BUILD_DIR) output=$(OUTPUT_DIR) config=$(CONFIG_DIR)"
 
-.PHONY: all compile_pdf compile_js compile create_zip create check-node check-luatex check-tools load-config clean_output clean_build distclean npm_clean help
+.PHONY: all compile_pdf compile_js compile create_zip create random_seeds check-node check-luatex check-tools load-config clean_output clean_build distclean npm_clean help

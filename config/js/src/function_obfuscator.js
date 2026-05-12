@@ -1,29 +1,29 @@
-const crypto = require('crypto');
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { saveMapping } from './latex_exporter.js';
 
-class FunctionObfuscator {
+export class FunctionObfuscator {
+    #seed;
+
     constructor(seed) {
-        this.seed = seed;
+        this.#seed = seed;
     }
 
     extractNames(code) {
         const names = new Set();
 
-        // test('functionName', ...)
         for (const m of code.matchAll(/test\s*\(\s*['"](\w+)['"]/g)) {
             if (m[1].length >= 2 && /^[a-zA-Z]/.test(m[1])) names.add(m[1]);
         }
-        // functions.xxx(...)
-        for (const m of code.matchAll(/functions\.(\w+)\s*\(/g)) {
+        for (const m of code.matchAll(/functions\.(\w+)/g)) {
             if (m[1].length >= 2 && /^[a-zA-Z]/.test(m[1])) names.add(m[1]);
         }
-        // module.exports = { ... }
         const exportsBlock = code.match(/module\.exports\s*=\s*{([^}]+)}/s);
         if (exportsBlock) {
             for (const m of exportsBlock[1].matchAll(/(\w+)(?:\s*[:,])/g)) {
                 if (m[1].length >= 2 && /^[a-zA-Z]/.test(m[1])) names.add(m[1]);
             }
         }
-        // module.exports.xxx = ...
         for (const m of code.matchAll(/module\.exports\.(\w+)\s*=/g)) {
             if (m[1].length >= 2 && /^[a-zA-Z]/.test(m[1])) names.add(m[1]);
         }
@@ -34,7 +34,7 @@ class FunctionObfuscator {
             }
         }
 
-        return Array.from(names).sort();
+        return [...names].sort();
     }
 
     createMapping(functionNames) {
@@ -42,7 +42,7 @@ class FunctionObfuscator {
         const existing = new Set();
 
         for (const name of functionNames) {
-            const obfuscated = this._generateName(name, existing);
+            const obfuscated = this.#generateName(name, existing);
             mapping[name] = obfuscated;
             existing.add(obfuscated);
         }
@@ -52,7 +52,11 @@ class FunctionObfuscator {
 
     applyMapping(code, mapping) {
         let result = code;
-        for (const [original, obfuscated] of Object.entries(mapping)) {
+        const sorted = Object.entries(mapping).sort((a, b) => b[0].length - a[0].length);
+        for (const [original, obfuscated] of sorted) {
+            if (!/^[A-Za-z]+$/.test(original)) {
+                throw new Error(`Invalid function name for mapping: '${original}'`);
+            }
             result = result
                 .replace(new RegExp(`functions\\.${original}\\b`, 'g'), `functions.${obfuscated}`)
                 .replace(new RegExp(`test\\s*\\(\\s*['"]${original}['"]`, 'g'), `test('${obfuscated}'`)
@@ -61,15 +65,23 @@ class FunctionObfuscator {
         return result;
     }
 
-    _generateName(originalName, existingNames) {
+    mangleFile(inputPath, outputPath, mappingPath) {
+        const code = readFileSync(inputPath, 'utf8');
+        const names = this.extractNames(code);
+        const mapping = this.createMapping(names);
+        const mangledCode = this.applyMapping(code, mapping);
+        writeFileSync(outputPath, mangledCode);
+        saveMapping(mapping, mappingPath);
+        return mapping;
+    }
+
+    #generateName(originalName, existingNames) {
         for (let attempt = 0; attempt < 1000; attempt++) {
-            const combined = `${this.seed}_${originalName}_${this.seed}_${attempt}`;
-            const hash = crypto.createHash('sha256').update(combined).digest('hex').substring(0, 8);
+            const combined = `${this.#seed}_${originalName}_${this.#seed}_${attempt}`;
+            const hash = createHash('sha256').update(combined).digest('hex').substring(0, 8);
             const name = `fn_${hash}`;
             if (!existingNames.has(name)) return name;
         }
         throw new Error(`Could not generate unique name for ${originalName} after 1000 attempts`);
     }
 }
-
-module.exports = FunctionObfuscator;
