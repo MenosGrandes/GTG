@@ -35,3 +35,55 @@ function __mg_randomFloat(min, max, decimals) {
   const val = Math.random() * (max - min) + min;
   return decimals !== undefined ? Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals) : val;
 }
+
+// Custom matcher: toBePrivateOrUndefined()
+// Passes if the received value is undefined (field not publicly accessible).
+// Use as: expect(instance.fieldName).toBePrivateOrUndefined()
+// Works for both # private fields (never reachable) and missing public properties.
+expect.extend({
+  toBePrivateOrUndefined(received) {
+    if (received === undefined) {
+      return {
+        pass: true,
+        message: () => `Expected property to be publicly accessible, but it was undefined (private or not exposed).`,
+      };
+    }
+    return {
+      pass: false,
+      message: () =>
+        `Expected property to be private (undefined from outside), but got: ${JSON.stringify(received)}.`,
+    };
+  },
+});
+
+// Custom matcher: toThrowClass(ErrorClass)
+// Fails with a clear message if ErrorClass is undefined (not exported from functions.js)
+// or if the thrown error is not an instance of ErrorClass.
+expect.extend({
+  toThrowClass(fn, ErrorClass) {
+    if (typeof ErrorClass !== 'function') {
+      return {
+        pass: false,
+        message: () =>
+          `toThrowClass() received ${String(ErrorClass)} instead of a constructor.\n` +
+          `Make sure the error class is defined and exported from functions.js.`,
+      };
+    }
+    try {
+      fn();
+      return {
+        pass: false,
+        message: () => `Expected function to throw ${ErrorClass.name}, but it did not throw.`,
+      };
+    } catch (err) {
+      if (err instanceof ErrorClass) {
+        return { pass: true, message: () => `Expected function not to throw ${ErrorClass.name}.` };
+      }
+      return {
+        pass: false,
+        message: () =>
+          `Expected function to throw ${ErrorClass.name}, but it threw: ${err && err.constructor ? err.constructor.name : String(err)}.`,
+      };
+    }
+  },
+});
