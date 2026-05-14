@@ -35,20 +35,20 @@ make distclean                # Remove all generated files + node_modules
 
 All paths and flags are in `project.config.json`:
 
-| Field | Purpose |
-|-------|---------|
-| `directories.*` | Input/output/build paths |
-| `mangled` | Enable/disable function name obfuscation |
-| `debug` | Verbose output |
+| Field             | Purpose                                   |
+| ----------------- | ----------------------------------------- |
+| `directories.*`   | Input/output/build paths                  |
+| `mangled`         | Enable/disable function name obfuscation  |
+| `debug`           | Verbose output                            |
 | `checkDuplicates` | Enable duplicate function name validation |
 
 ### Makefile Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SEED` | 12 | Random seed for exercise selection |
-| `COUNT` | 3 | Number of exercises to select |
-| `N` | 1 | Number of random seeds for `random_seeds` target |
+| Variable | Default | Description                                      |
+| -------- | ------- | ------------------------------------------------ |
+| `SEED`   | 12      | Random seed for exercise selection               |
+| `COUNT`  | 3       | Number of exercises to select                    |
+| `N`      | 1       | Number of random seeds for `random_seeds` target |
 
 ## How It Works
 
@@ -96,6 +96,7 @@ Validation runs automatically on build (controlled by `checkDuplicates` flag).
 ## Validation
 
 The build pipeline validates:
+
 - Matching `.js` ↔ `.tex` file pairs
 - No duplicate function/class names across test files
 - Function names are letters-only

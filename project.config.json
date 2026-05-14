@@ -33,13 +33,7 @@
     "studentFunctions": "functions.js"
   },
   "texConfig": {
-    "includes": [
-      "get_random_exercises",
-      "copy_protect",
-      "copyright",
-      "plagiarism",
-      "preambule"
-    ],
+    "includes": ["get_random_exercises", "copy_protect", "copyright", "plagiarism", "preambule"],
     "instructions": {
       "pl": "pre_instruction_pl",
       "eng": "pre_instruction_eng"
