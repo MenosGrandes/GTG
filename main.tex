@@ -1,9 +1,9 @@
 \documentclass{article}
 
-\input{config/tex/get_random_exercises}
-\input{config/tex/copy_protect}
-\input{config/tex/copyright}
-\input{config/tex/plagiarism}
+\input{config/core/tex/get_random_exercises}
+\input{config/core/tex/copy_protect}
+\input{config/core/tex/copyright}
+\input{config/core/tex/plagiarism}
 
 
 % definitions used in preambule
@@ -16,18 +16,18 @@
     a \\ e-mail  \href{mailto:f@a.net}{f@a.net} \and
     b \\ e-mail  \href{mailto:f@b.net}{f@b.net}
 }
-\input{config/tex/preambule}
+\input{config/core/tex/preambule}
 \usePreambule
 
 % function_mapping depends on config/tex/preambule
-\input{config/tex/function_mapping}
+\input{config/core/tex/function_mapping}
 
 
 \begin{document}
 	\date{\monthyearcmd}
 	\maketitle
 
-\input{config/tex/pre_instruction_\useLanguage}
+\input{config/core/tex/pre_instruction_\useLanguage}
    
 
 

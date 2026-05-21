@@ -35,20 +35,20 @@ make distclean                # Remove all generated files + node_modules
 
 All paths and flags are in `project.config.json`:
 
-| Field | Purpose |
-|-------|---------|
-| `directories.*` | Input/output/build paths |
-| `mangled` | Enable/disable function name obfuscation |
-| `debug` | Verbose output |
+| Field             | Purpose                                   |
+| ----------------- | ----------------------------------------- |
+| `directories.*`   | Input/output/build paths                  |
+| `mangled`         | Enable/disable function name obfuscation  |
+| `debug`           | Verbose output                            |
 | `checkDuplicates` | Enable duplicate function name validation |
 
 ### Makefile Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SEED` | 12 | Random seed for exercise selection |
-| `COUNT` | 3 | Number of exercises to select |
-| `N` | 1 | Number of random seeds for `random_seeds` target |
+| Variable | Default | Description                                      |
+| -------- | ------- | ------------------------------------------------ |
+| `SEED`   | 12      | Random seed for exercise selection               |
+| `COUNT`  | 3       | Number of exercises to select                    |
+| `N`      | 1       | Number of random seeds for `random_seeds` target |
 
 ## How It Works
 
@@ -66,7 +66,7 @@ main.tex                       # LaTeX document entry point
 project.config.json            # Central configuration
 Makefile                       # Build orchestration
 exercises/
-├── tests/                     # JS test files 
+├── tests/                     # JS test files (file_72.js – file_127.js)
 └── tex/                       # LaTeX exercise files
 config/
 ├── js/
@@ -86,7 +86,7 @@ build/                         # Intermediate artifacts (gitignored)
 
 ## Adding Exercises
 
-1. Create `exercises/tests/file_<N>.js` — tests using `callN` pattern
+1. Create `exercises/tests/file_<N>.js` — exactly 5 tests using `callN` pattern
 2. Create `exercises/tex/file_<N>.tex` — matching LaTeX description
 3. File basenames must match (`file_N.js` ↔ `file_N.tex`)
 4. Function/class names must be letters-only and unique across the entire pool
@@ -96,6 +96,7 @@ Validation runs automatically on build (controlled by `checkDuplicates` flag).
 ## Validation
 
 The build pipeline validates:
+
 - Matching `.js` ↔ `.tex` file pairs
 - No duplicate function/class names across test files
 - Function names are letters-only

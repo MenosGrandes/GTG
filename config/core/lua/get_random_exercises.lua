@@ -1,7 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- LOAD CONFIGURATION
 -- ─────────────────────────────────────────────────────────────────────────────
-local ConfigLoader = require("config.lua.config_loader")
+local ConfigLoader = require("config.core.lua.config_loader")
 local config = ConfigLoader.new()
 
 function file_exists(file)

@@ -19,7 +19,7 @@ code/
 *.synctex.gz
 *.pdf
 *.zip
-
+*.lock
 # OS files
 .DS_Store
 Thumbs.db
