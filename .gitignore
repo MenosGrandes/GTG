@@ -25,3 +25,5 @@ code/
 Thumbs.db
 *~
 *.bak
+output/
+build/
