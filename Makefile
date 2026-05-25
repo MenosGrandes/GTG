@@ -2,6 +2,8 @@
 
 include config/make/colors.mk
 include config/core/py/Makefile.mk
+export TEXMFCACHE ?= /tmp/luaotfload-cache
+export TEXMF_OUTPUT_DIRECTORY ?= build
 # Configuration file
 CONFIG_FILE = project.config.json
 
@@ -9,6 +11,7 @@ CONFIG_FILE = project.config.json
 SEED ?= 12
 COUNT ?= 3
 N ?= 1
+LANGUAGE_TEX ?= PL
 
 # Directory layout
 BUILD_DIR = build
@@ -51,7 +54,7 @@ define header
 endef
 
 # ─── Default target ───────────────────────────────────────────────────────────
-all: create  | encrypt_pdf
+all: create encrypt_pdf
 
 # ─── Directory creation (order-only, single rule) ─────────────────────────────
 $(ALL_DIRS):
@@ -89,7 +92,7 @@ check-tools: check-node check-luatex load-config check-python
 # ─── LuaLaTeX compilation macro ──────────────────────────────────────────────
 define run_lualatex
 	@echo "  → Compiling $(1)..."
-	@$(LUALATEX) --shell-escape -output-directory=$(BUILD_DIR) -jobname=$(1) \
+	@TEXMF_OUTPUT_DIRECTORY=$(BUILD_DIR) $(LUALATEX) --shell-escape -output-directory=$(BUILD_DIR) -jobname=$(1) \
 		-interaction=nonstopmode -halt-on-error \
 		'\def\myseed{$(SEED)}\def\mycount{$(COUNT)}\input{$(2)}' \
 		> $(BUILD_DIR)/$(1).log 2>&1 || \

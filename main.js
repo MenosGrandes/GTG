@@ -48,7 +48,7 @@ plugin.concatenate(selectedFiles, selector.testsDir, plugin.getUtilsPath(), outp
 
 if (config.getMangled() && plugin.supportsObfuscation) {
   const mangledPath = outputFilePath.replace(plugin.extension, ".mangled" + plugin.extension);
-  plugin.obfuscate(seed, outputFilePath, mangledPath, config.getFunctionMappingPath(seed));
+  plugin.obfuscate(seed, outputFilePath, mangledPath, config.getFunctionMappingPath(seed), { texDir: config.getExercisesTexDir(), selectedFiles });
 } else {
   const mangledPath = outputFilePath.replace(plugin.extension, ".mangled" + plugin.extension);
   copyFileSync(outputFilePath, mangledPath);

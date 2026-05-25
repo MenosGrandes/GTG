@@ -46,7 +46,7 @@
     }
   },
   "mangled": false,
-  "debug": false,
+  "debug": true,
   "checkDuplicates": true,
   "language": "javascript"
 }

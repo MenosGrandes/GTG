@@ -41,9 +41,9 @@ export class JavaScriptPlugin extends LanguagePlugin {
     writeFileSync(outputPath, parts.join("\n"));
   }
 
-  obfuscate(seed, inputPath, outputPath, mappingPath) {
+  obfuscate(seed, inputPath, outputPath, mappingPath, { texDir, selectedFiles } = {}) {
     const code = readFileSync(inputPath, "utf8");
-    const names = this.#extractAllNames(code);
+    const names = this.#extractAllNames(code, texDir, selectedFiles);
     const mapping = this.#createMapping(seed, names);
     const mangledCode = this.#applyMapping(code, mapping);
     writeFileSync(outputPath, mangledCode);
@@ -51,7 +51,7 @@ export class JavaScriptPlugin extends LanguagePlugin {
     return mapping;
   }
 
-  #extractAllNames(code) {
+  #extractAllNames(code, texDir, selectedFiles) {
     const names = new Set();
 
     for (const m of code.matchAll(/test\s*\(\s*['"](\w+)['"]/g)) {
@@ -68,6 +68,18 @@ export class JavaScriptPlugin extends LanguagePlugin {
     }
     for (const m of code.matchAll(/module\.exports\.(\w+)\s*=/g)) {
       if (m[1].length >= 2 && /^[a-zA-Z]/.test(m[1])) names.add(m[1]);
+    }
+
+    if (texDir && selectedFiles) {
+      for (const file of selectedFiles) {
+        const texFile = join(texDir, file.replace(this.extension, ".tex"));
+        if (existsSync(texFile)) {
+          const texContent = readFileSync(texFile, "utf8");
+          for (const m of texContent.matchAll(/\\func\{([^}]+)\}/g)) {
+            if (m[1].length >= 2 && /^[a-zA-Z]/.test(m[1])) names.add(m[1]);
+          }
+        }
+      }
     }
 
     for (const name of names) {

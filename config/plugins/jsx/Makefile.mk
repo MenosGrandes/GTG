@@ -7,8 +7,13 @@ compile_tests: check-tools | $(BUILD_DIR) $(TEST_DIR)
 	fi
 	@echo "  → SEED: $(SEED), COUNT: $(COUNT)"
 	$(NODE_JS) $(MAIN_JS_FILE) $(SEED) $(COUNT) '$(TEST_DIR)/$(MAIN_FILE).jsx'
-	@echo "  → Installing dependencies..."
-	@$(NPM) install --silent 2>&1 | grep -v "^npm" || true
+	@if [ ! -f $(BUILD_DIR)/.npm_installed ] || [ package.json -nt $(BUILD_DIR)/.npm_installed ]; then \
+		echo "  → Installing dependencies..."; \
+		$(NPM) install --silent 2>&1 | grep -v "^npm" || true; \
+		touch $(BUILD_DIR)/.npm_installed; \
+	else \
+		echo "  → Dependencies up to date"; \
+	fi
 	@echo "  → Obfuscating code..."
 	$(OBFUSCATOR) --config '$(PLUGINS_DIR)/javascript/obfuscator_config.json' \
 		$(TEST_DIR)/$(MANGLED_JS_FILE) --output $(TEST_DIR)/$(OUTPUT_JS_FILE)

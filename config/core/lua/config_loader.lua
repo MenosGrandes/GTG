@@ -9,7 +9,7 @@ ConfigLoader.__index = ConfigLoader
 
 function ConfigLoader.new(configPath)
     local self = setmetatable({}, ConfigLoader)
-    configPath = configPath or "project.config.json"
+    configPath = configPath or os.getenv("GTG_CONFIG_FILE") or "project.config.json"
     
     local file = io.open(configPath, "r")
     if not file then
