@@ -43,9 +43,11 @@ export class JavaScriptPlugin extends LanguagePlugin {
 
   obfuscate(seed, inputPath, outputPath, mappingPath, { texDir, selectedFiles } = {}) {
     const code = readFileSync(inputPath, "utf8");
-    const names = this.#extractAllNames(code, texDir, selectedFiles);
+    const utilsContent = readFileSync(this.getUtilsPath(), "utf8");
+    const testCode = code.slice(utilsContent.length);
+    const names = this.#extractAllNames(testCode, texDir, selectedFiles);
     const mapping = this.#createMapping(seed, names);
-    const mangledCode = this.#applyMapping(code, mapping);
+    const mangledCode = utilsContent + this.#applyMapping(testCode, mapping);
     writeFileSync(outputPath, mangledCode);
     saveMapping(mapping, mappingPath);
     return mapping;
@@ -119,8 +121,7 @@ export class JavaScriptPlugin extends LanguagePlugin {
       }
       result = result
         .replace(new RegExp(`functions\\.${original}\\b`, "g"), `functions.${obfuscated}`)
-        .replace(new RegExp(`test\\s*\\(\\s*['"]${original}['"]`, "g"), `test('${obfuscated}'`)
-        .replace(new RegExp(`\\b${original}\\s*([,:])`, "g"), `${obfuscated}$1`);
+        .replace(new RegExp(`\\b${original}\\b`, "g"), obfuscated);
     }
     return result;
   }

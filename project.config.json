@@ -45,7 +45,7 @@
       "copyProtect": "copy_protect.lua"
     }
   },
-  "mangled": false,
+  "mangled": true,
   "debug": true,
   "checkDuplicates": true,
   "language": "javascript"
