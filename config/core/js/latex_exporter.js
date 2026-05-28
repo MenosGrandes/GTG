@@ -9,8 +9,7 @@ export function saveMapping(mapping, outputPath) {
 
   const content = Object.entries(mapping)
     .map(([orig, obf]) => {
-      const escaped = obf.replace(/_/g, "\\_");
-      return `\\newcommand{\\func${orig}}{\\texttt{${escaped}}}`;
+      return `\\newcommand{\\func${orig}}{\\raisebox{-0.2ex}{\\includegraphics[height=1.1em]{build/fn_images/${obf}.png}}}`;
     })
     .join("\n");
 

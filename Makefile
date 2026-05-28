@@ -54,7 +54,7 @@ define header
 endef
 
 # ─── Default target ───────────────────────────────────────────────────────────
-all: create encrypt_pdf
+all: create
 
 # ─── Directory creation (order-only, single rule) ─────────────────────────────
 $(ALL_DIRS):
@@ -109,12 +109,24 @@ endif
 # ─── Build targets (language-specific) ────────────────────────────────────────
 include $(PLUGINS_DIR)/$(LANGUAGE)/Makefile.mk
 
-compile_pdf: check-tools | $(BUILD_DIR) $(PDF_DIR)
+generate_fn_images: | $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)/fn_images
+	@$(UV) run python config/core/py/generate_fn_images.py $(BUILD_DIR)/function_mapping_$(SEED).tex $(BUILD_DIR)/fn_images/
+
+secure_pdf: | $(PDF_DIR)
+	@echo "  → Encrypting and stripping ToUnicode..."
+	@$(UV) run python config/core/py/encrypt_pdf.py "$(PDF_DIR)/$(MAIN_FILE).pdf" $(SEED) "$(PDF_DIR)/$(MAIN_FILE)_encrypted.pdf"
+	@rm -f "$(PDF_DIR)/$(MAIN_FILE).pdf"
+	@mv "$(PDF_DIR)/$(MAIN_FILE)_encrypted.pdf" "$(PDF_DIR)/$(MAIN_FILE).pdf"
+	@echo "  ✓ PDF secured"
+
+compile_pdf: check-tools generate_fn_images | $(BUILD_DIR) $(PDF_DIR)
 	$(call header,Building PDF with LuaLaTeX)
 	@echo "  → SEED: $(SEED), COUNT: $(COUNT)"
 	$(call run_lualatex,$(MAIN_FILE),$(TEX_FILE))
 	@mv $(BUILD_DIR)/$(MAIN_FILE).pdf $(PDF_DIR)/$(MAIN_FILE).pdf
 	@echo "  ✓ PDF created: $(PDF_DIR)/$(MAIN_FILE).pdf"
+	@$(MAKE) --no-print-directory secure_pdf
 
 compile: compile_tests compile_pdf 
 
@@ -184,7 +196,6 @@ help:
 	@echo "  npm_clean        Remove node_modules"
 	@echo "  check-tools      Verify required tools are installed"
 	@echo "  load-config      Load and display configuration"
-	@echo "  encrypt_pdf      encrypt PDF"
 	@echo "  help             Show this message
 	@echo ""
 	@echo "Examples:"
@@ -194,4 +205,4 @@ help:
 	@echo "Defaults: SEED=$(SEED), COUNT=$(COUNT)"
 	@echo "Dirs:     build=$(BUILD_DIR) output=$(OUTPUT_DIR) config=$(CONFIG_DIR)"
 
-.PHONY: all compile_pdf compile_tests compile create_zip create random_seeds check-node check-luatex check-tools load-config clean_output clean_build distclean npm_clean encrypt_pdf help
+.PHONY: all compile_pdf compile_tests compile create_zip create random_seeds check-node check-luatex check-tools load-config clean_output clean_build distclean npm_clean help

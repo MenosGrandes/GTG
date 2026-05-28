@@ -210,7 +210,7 @@ local function protect_nodes(head)
 end
 
 -- Register callback for automatic protection
- luatexbase.add_to_callback("pre_output_filter", protect_nodes, "copy_protection")
+luatexbase.add_to_callback("pre_output_filter", protect_nodes, "copy_protection")
 
 -- Log the protection probability at startup
- texio.write_nl("Copy protection initialized with probability: " .. get_protection_probability())
+texio.write_nl("Copy protection initialized with probability: " .. get_protection_probability())

@@ -17,4 +17,7 @@ compile_tests: check-tools | $(BUILD_DIR) $(TEST_DIR)
 	@echo "  → Obfuscating code..."
 	$(OBFUSCATOR) --config '$(PLUGINS_DIR)/javascript/obfuscator_config.json' \
 		$(TEST_DIR)/$(MANGLED_JS_FILE) --output $(TEST_DIR)/$(OUTPUT_JS_FILE)
+	@echo "  → Adding integrity check..."
+	@HASH=$$($(NODE_JS) -e "const c=require('crypto'),f=require('fs');process.stdout.write(c.createHash('sha256').update(f.readFileSync('$(TEST_DIR)/$(OUTPUT_JS_FILE)','utf8')).digest('hex'))"); \
+	$(NODE_JS) -e "const fs=require('fs'),p='$(TEST_DIR)/$(OUTPUT_JS_FILE)',c=fs.readFileSync(p,'utf8');fs.writeFileSync(p,'const __ic=require(\"crypto\").createHash(\"sha256\");const __if=require(\"fs\").readFileSync(__filename,\"utf8\");if(__ic.update(__if.slice(__if.indexOf(\"\\\\n\")+1)).digest(\"hex\")!==\"'+'$$HASH'+'\"){throw new Error(\"Integrity check failed\")}\\n'+c)"
 	@echo "  ✓ Test file: $(TEST_DIR)/$(OUTPUT_JS_FILE)"
