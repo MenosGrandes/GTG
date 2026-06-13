@@ -27,6 +27,16 @@ describe("Anti-cheat mechanisms", () => {
     if (!existsSync(mangledPath) || !existsSync(functionsTestPath)) {
       execSync("just compile-tests", { cwd: root, stdio: "pipe", timeout: 60000, env });
     }
+    if (!existsSync(pdfPath)) {
+      try {
+        execSync(
+          'bash -c "source /app/lmod/lmod/init/bash && module load texlive/2024 && just compile-pdf"',
+          { cwd: root, stdio: "pipe", timeout: 120000, env },
+        );
+      } catch {
+        // PDF build not available in this environment
+      }
+    }
   });
 
   it("no original function names in mangled output", () => {
