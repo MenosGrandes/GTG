@@ -1,0 +1,17 @@
+# JavaScript Plugin - Justfile
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Shared plugin paths
+shared_dir := justfile_directory() 
+npm_sentinel := shared_dir / ".npm_installed"
+
+[doc("Check dependency for shared deps plugin")]
+check_shared_dependency:
+    #!/usr/bin/env bash
+    echo "  → Step : Checking shared plugin dependencies..."
+    if [ ! -f "{{npm_sentinel}}" ] || [ "{{shared_dir}}/package.json" -nt "{{npm_sentinel}}" ]; then
+        npm install --prefix "{{shared_dir}}" --silent 2>&1 | grep -v "^npm" || true
+        touch "{{npm_sentinel}}"
+    else
+        echo "  → Shared dependencies up to date"
+    fi

@@ -17,35 +17,7 @@
 
 % Language-specific setup command
 \newcommand{\usePreambule}{%
-  \ifdefined\useLanguage
-  \ifthenelse{\equal{\useLanguage}{PL}}{%
-    \usepackage{polski}%
-  }{%
-    \usepackage[english]{babel}%
-  }%
-  \setupLanguageSpecifics%
-  \else
-  \PackageError{preambule}{Language not set}{You must define
-  \string\useLanguage\space before calling \string\usePreambule}%
-  \fi
-}
-
-\usepackage{ifthen}
-
-% Setup language-specific content
-\newcommand{\setupLanguageSpecifics}{%
-  \ifthenelse{\equal{\useLanguage}{PL}}{%
-    % Polish-specific settings
-    \newcommand{\exerciseWord}{Zadanie}%
-    \newcommand{\exercisesWord}{Zadania}%
-    \newcommand{\monthyearcmd}{\protect\directlua{month_year_nominative_pl()}}%
-  }{%
-    % English-specific settings
-    \newcommand{\exerciseWord}{Exercise}%
-    \newcommand{\exercisesWord}{Exercises}%
-    \newcommand{\monthyearcmd}{\directlua{month_year()}}%
-    \hypersetup{pdflang={en}}%
-  }%
+  \input{config/core/tex/preambule/\useLanguageInTex}%
   \setupFooter%
 }
 

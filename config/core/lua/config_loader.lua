@@ -1,7 +1,3 @@
--- Configuration loader for Lua
--- Reads from project.config.json and provides path resolution
-
--- Use LuaTeX's built-in JSON library
 local json = utilities.json
 
 local ConfigLoader = {}
@@ -9,7 +5,7 @@ ConfigLoader.__index = ConfigLoader
 
 function ConfigLoader.new(configPath)
     local self = setmetatable({}, ConfigLoader)
-    configPath = configPath or os.getenv("GTG_CONFIG_FILE") or "project.config.json"
+    configPath = configPath or os.getenv("GTG_CONFIG_FILE") or ".gtgrc"
     
     local file = io.open(configPath, "r")
     if not file then
@@ -27,30 +23,16 @@ function ConfigLoader.new(configPath)
     return self
 end
 
--- Directory getters
 function ConfigLoader:getExercisesTexDir()
-    return self.config.directories.exercises.tex
-end
-
-function ConfigLoader:getExercisesTestsDir()
-    return self.config.directories.exercises.tests
-end
-
-function ConfigLoader:getConfigTexDir()
-    return self.config.directories.config.tex
-end
-
-function ConfigLoader:getConfigLuaDir()
-    return self.config.directories.config.lua
+    local lang = self.config.language or "javascript"
+    local texLang = self.config.texLanguage or "en"
+    local langDir = lang
+    if lang == "javascript" then langDir = "js" end
+    return self.config.directories.exercises.tex .. "/" .. langDir .. "/" .. texLang
 end
 
 function ConfigLoader:getBuildDir()
     return self.config.directories.build
-end
-
--- File path getters
-function ConfigLoader:getTexShuffledFilePath()
-    return self:getBuildDir() .. "/" .. self.config.files.shuffledFiles.tex
 end
 
 function ConfigLoader:getJsShuffledFilePath()
@@ -60,11 +42,6 @@ end
 function ConfigLoader:getFunctionMappingPath(seed)
     local filename = self.config.files.functionMapping:gsub("{seed}", tostring(seed))
     return self:getBuildDir() .. "/" .. filename
-end
-
--- Get raw config
-function ConfigLoader:getConfig()
-    return self.config
 end
 
 return ConfigLoader

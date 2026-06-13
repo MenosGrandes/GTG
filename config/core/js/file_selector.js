@@ -1,5 +1,6 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
+import { parseMeta } from "./meta_parser.js";
 
 function seededRandom(seed) {
   const a = 1103515245n;
@@ -51,6 +52,32 @@ export class FileSelector {
     const files = this.#loadFiles();
     this.#validate(files);
     const selected = this.#select(files, seed, n);
+    this.#persist(selected);
+    return selected;
+  }
+
+  getFilesByDifficulty(seed, difficulties) {
+    const files = this.#loadFiles();
+    this.#validate(files);
+    const ext = this.#plugin.extension;
+    const rng = seededRandom(seed);
+
+    const selected = [];
+    for (const level of difficulties) {
+      const pool = files.filter((f) => {
+        const metaPath = join(this.#testsDir, f.replace(ext, ".meta.toml"));
+        if (!existsSync(metaPath)) return false;
+        const meta = parseMeta(readFileSync(metaPath, "utf8"));
+        return meta.exercise && meta.exercise.difficulty === level;
+      });
+      if (pool.length === 0) {
+        throw new Error(`No exercises found for difficulty ${level}`);
+      }
+      pool.sort();
+      shuffle(pool, rng);
+      selected.push(pool[0]);
+    }
+
     this.#persist(selected);
     return selected;
   }

@@ -59,7 +59,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     with open(mapping_file, 'r') as f:
         content = f.read()
-    names = re.findall(r'fn_images/(fn_[0-9a-f]{8})\.png', content)
+    names = re.findall(r'fn_images/([^.]+)\.png', content)
     names = list(set(names))
     for i, name in enumerate(sorted(names)):
         output_path = os.path.join(output_dir, f'{name}.png')

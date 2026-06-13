@@ -1,0 +1,55 @@
+# JavaScript Plugin - Justfile
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Parameters passed from root justfile
+seed := env_var_or_default("SEED", "12")
+count := env_var_or_default("COUNT", "3")
+difficulty := env_var_or_default("DIFFICULTY", "")
+build_dir := env_var_or_default("BUILD_DIR", "build")
+test_dir := env_var_or_default("TEST_DIR", "output/tests")
+config_file := env_var_or_default("CONFIG_FILE", ".gtgrc")
+main_js_file := env_var_or_default("MAIN_JS_FILE", "main.js")
+main_file := env_var_or_default("MAIN_FILE", "main")
+output_js_file := env_var_or_default("OUTPUT_JS_FILE", "functions.test.js")
+
+# Shared plugin paths
+shared_dir := justfile_directory() / "../shared"
+npm_sentinel := shared_dir / ".npm_installed"
+obfuscator := shared_dir / "node_modules/.bin/javascript-obfuscator"
+
+# Plugin paths
+plugin_dir := justfile_directory()
+
+[doc("Build JavaScript tests: select, obfuscate names, obfuscate code, integrity check")]
+compile-tests:
+    #!/usr/bin/env bash
+    echo "  → SEED: {{seed}}, COUNT: {{count}}"
+    echo "  → Step 1: Selecting and mangling exercises..."
+    node {{main_js_file}} {{seed}} {{count}} '{{test_dir}}/{{main_file}}.js' '{{difficulty}}'
+
+    echo "  → Step 2: Installing shared plugin dependencies..."
+    if [ ! -f "{{npm_sentinel}}" ] || [ "{{shared_dir}}/package.json" -nt "{{npm_sentinel}}" ]; then
+        npm install --prefix "{{shared_dir}}" --silent 2>&1 | grep -v "^npm" || true
+        touch "{{npm_sentinel}}"
+    else
+        echo "  → Shared dependencies up to date"
+    fi
+
+    echo "  → Step 3: Appending integrity check..."
+    cat '{{plugin_dir}}/integrity.js' >> '{{test_dir}}/{{main_file}}.mangled.js'
+
+    echo "  → Step 4: Obfuscating code..."
+    {{obfuscator}} --config '{{plugin_dir}}/obfuscator_config.json' \
+        {{test_dir}}/{{main_file}}.mangled.js --output {{test_dir}}/{{output_js_file}}
+
+    echo "  → Step 5: Prepending integrity hash..."
+    node -e '
+      const crypto = require("crypto");
+      const fs = require("fs");
+      const p = process.argv[1];
+      const c = fs.readFileSync(p, "utf8");
+      const hash = crypto.createHash("sha256").update(c).digest("hex");
+      fs.writeFileSync(p, "//" + hash + "\n" + c);
+    ' '{{test_dir}}/{{output_js_file}}'
+
+    echo "  ✓ Test file: {{test_dir}}/{{output_js_file}}"

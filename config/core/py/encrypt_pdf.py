@@ -34,7 +34,7 @@ def main():
         print(f'  PDF not found: {input_path} — skipping encryption')
         sys.exit(1)
     password = secrets.token_urlsafe(10)
-    print(password)
+    print(f'  Owner password: {password}')
     pdf = pikepdf.open(input_path)
     for page in pdf.pages:
         if '/Resources' in page:

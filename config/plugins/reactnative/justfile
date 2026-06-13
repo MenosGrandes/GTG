@@ -1,0 +1,71 @@
+# ReactNative Plugin - Justfile
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Parameters passed from root justfile
+seed := env_var_or_default("SEED", "42")
+count := env_var_or_default("COUNT", "3")
+difficulty := env_var_or_default("DIFFICULTY", "")
+build_dir := env_var_or_default("BUILD_DIR", "build")
+test_dir := env_var_or_default("TEST_DIR", "output/tests")
+config_file := env_var_or_default("CONFIG_FILE", ".gtgrc")
+main_js_file := env_var_or_default("MAIN_JS_FILE", "main.js")
+main_file := env_var_or_default("MAIN_FILE", "main")
+output_js_file := env_var_or_default("OUTPUT_JS_FILE", "functions.test.js")
+zip_dir := env_var_or_default("ZIP_DIR", "output/zip")
+zip_file := env_var_or_default("ZIP_FILE", "functions.zip")
+
+# Shared plugin paths
+shared_dir := justfile_directory() / "../shared"
+npm_sentinel := shared_dir / ".npm_installed"
+swc := shared_dir / "node_modules/.bin/swc"
+obfuscator := shared_dir / "node_modules/.bin/javascript-obfuscator"
+
+# Plugin paths
+plugin_dir := justfile_directory()
+scaffold_dir := build_dir / "scaffold"
+mapping_file := build_dir / "function_mapping_" + seed + ".tex"
+
+[doc("Build ReactNative tests: select, mangle, transpile, obfuscate, scaffold, zip")]
+compile-tests:
+    #!/usr/bin/env bash
+    echo "  → SEED: {{seed}}, COUNT: {{count}}"
+
+    echo "  → Step 1: Selecting and mangling exercises..."
+    node {{main_js_file}} {{seed}} {{count}} '{{test_dir}}/{{main_file}}.jsx' '{{difficulty}}'
+
+    echo "  → Step 2: Installing shared plugin dependencies..."
+    if [ ! -f "{{npm_sentinel}}" ] || [ "{{shared_dir}}/package.json" -nt "{{npm_sentinel}}" ]; then
+        npm install --prefix "{{shared_dir}}" --silent 2>&1 | grep -v "^npm" || true
+        touch "{{npm_sentinel}}"
+    else
+        echo "  → Shared dependencies up to date"
+    fi
+
+    echo "  → Step 3: Transpiling JSX → CJS with SWC..."
+    {{swc}} {{test_dir}}/{{main_file}}.mangled.jsx \
+        --out-file {{test_dir}}/{{main_file}}.mangled.js \
+        --config-file {{plugin_dir}}/.swcrc \
+        --no-swcrc
+
+    echo "  → Step 4: Obfuscating code..."
+    {{obfuscator}} --config {{plugin_dir}}/obfuscator_config.json \
+        {{test_dir}}/{{main_file}}.mangled.js --output {{test_dir}}/{{output_js_file}}
+
+    echo "  → Step 5: Assembling student scaffold..."
+    rm -rf {{scaffold_dir}}
+    mkdir -p {{scaffold_dir}}/src {{scaffold_dir}}/tests
+    cp {{plugin_dir}}/scaffold/package.json {{scaffold_dir}}/package.json
+    cp {{plugin_dir}}/scaffold/app.json {{scaffold_dir}}/app.json
+    cp {{plugin_dir}}/scaffold/babel.config.js {{scaffold_dir}}/babel.config.js
+    cp {{plugin_dir}}/scaffold/jest.config.js {{scaffold_dir}}/jest.config.js
+    cp {{plugin_dir}}/scaffold/App.jsx {{scaffold_dir}}/App.jsx
+    cp {{test_dir}}/{{output_js_file}} {{scaffold_dir}}/tests/{{output_js_file}}
+    if [ -f "{{mapping_file}}" ]; then
+        for name in $(grep -oP 'fn_images/\K[^.]+' "{{mapping_file}}"); do
+            touch "{{scaffold_dir}}/src/$name.jsx"
+        done
+    fi
+
+    echo "  → Step 6: Creating ZIP..."
+    cd {{scaffold_dir}} && zip -q -r "$(pwd)/../../{{zip_dir}}/{{zip_file}}" .
+    echo "  ✓ ZIP created: {{zip_dir}}/{{zip_file}}"

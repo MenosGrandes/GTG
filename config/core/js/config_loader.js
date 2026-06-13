@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 
-const CONFIG_NAME = "project.config.json";
+const CONFIG_NAME = ".gtgrc";
 
 function findConfig(startDir) {
   let dir = startDir;
@@ -9,9 +9,7 @@ function findConfig(startDir) {
     const candidate = join(dir, CONFIG_NAME);
     if (existsSync(candidate)) return candidate;
     const parent = dirname(dir);
-    if (parent === dir) {
-      throw new Error(`${CONFIG_NAME} not found from ${startDir}`);
-    }
+    if (parent === dir) throw new Error(`${CONFIG_NAME} not found from ${startDir}`);
     dir = parent;
   }
 }
@@ -42,25 +40,23 @@ class ConfigLoader {
   }
 
   getExercisesTexDir() {
-    return this.#config.directories.exercises.tex;
+    const lang = this.#config.language || "javascript";
+    const texLang = this.#config.texLanguage || "en";
+    const langDir = lang === "javascript" ? "js" : lang;
+    return `${this.#config.directories.exercises.tex}/${langDir}/${texLang}`;
   }
+
   getExercisesTestsDir() {
     return this.#config.directories.exercises.tests;
   }
   getConfigDir() {
     return this.#config.directories.config.base;
   }
-  getOutputPdfDir() {
-    return this.#config.directories.output.pdf;
-  }
-  getOutputTestDir() {
-    return this.#config.directories.output.test;
-  }
-  getOutputZipDir() {
-    return this.#config.directories.output.zip;
-  }
   getBuildDir() {
     return this.#config.directories.build;
+  }
+  getOutputDir() {
+    return this.#config.directories.output;
   }
 
   getTexShuffledFilePath() {
@@ -71,12 +67,11 @@ class ConfigLoader {
   }
 
   getFunctionMappingPath(seed) {
-    const filename = this.#config.files.functionMapping.replace("{seed}", seed);
-    return join(this.getBuildDir(), filename);
+    return join(this.getBuildDir(), this.#config.files.functionMapping.replace("{seed}", seed));
   }
 
-  resolve(...pathSegments) {
-    return resolve(this.#rootDir, ...pathSegments);
+  resolve(...p) {
+    return resolve(this.#rootDir, ...p);
   }
   getConfig() {
     return this.#config;
@@ -84,13 +79,12 @@ class ConfigLoader {
   getMangled() {
     return this.#config.mangled;
   }
-  getDebug() {
-    return this.#config.debug;
-  }
   getCheckDuplicates() {
     return this.#config.checkDuplicates;
   }
+
   getLanguage() {
+    if (!this.#config.language) throw new Error("'language' must be set in .gtgrc");
     return this.#config.language;
   }
 }

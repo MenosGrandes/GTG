@@ -2,14 +2,14 @@
 
 \input{config/core/tex/get_random_exercises}
 \input{config/core/tex/copy_protect}
-\input{config/core/tex/copyright}
-\input{config/core/tex/plagiarism}
+\input{config/core/tex/copyright/main}
+\input{config/core/tex/plagiarism/main}
 
 
 % definitions used in preambule
 
 \newcommand{\testDuration}{120}
-\newcommand{\useLanguage}{PL}
+\newcommand{\useLanguageInTex}{en}
 \newcommand{\pdfTitle}{ Tytul}
 \newcommand{\CopyrightAuthors}{a \& b}
 \author{
@@ -27,12 +27,10 @@
 	\date{\monthyearcmd}
 	\maketitle
 
-\input{config/core/tex/pre_instruction_\useLanguage}
-   
-
+\input{config/core/tex/pre_instruction/main}
+\usePreInstruction
 
 \usePlagiarism
-
 
 \inputexercises{\myseed}{\mycount}
 \useCopyright

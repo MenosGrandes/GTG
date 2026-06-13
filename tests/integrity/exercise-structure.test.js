@@ -1,50 +1,50 @@
-import { describe, it, expect } from 'vitest';
-import fs from 'fs';
-import path from 'path';
+import { describe, it, expect } from "vitest";
+import fs from "fs";
+import path from "path";
 
 const root = process.cwd();
-const testsDir = path.join(root, 'exercises', 'tests');
-const texDir = path.join(root, 'exercises', 'tex');
+const testsDir = path.join(root, "exercises", "tests");
+const texDir = path.join(root, "exercises", "tex");
 
-const jsFiles = fs.readdirSync(testsDir).filter(f => f.startsWith('file_') && f.endsWith('.js'));
-const texFiles = fs.readdirSync(texDir).filter(f => f.startsWith('file_') && f.endsWith('.tex'));
+const jsFiles = fs.readdirSync(testsDir).filter((f) => f.startsWith("file_") && f.endsWith(".js"));
+const texFiles = fs.readdirSync(texDir).filter((f) => f.startsWith("file_") && f.endsWith(".tex"));
 
-const jsBasenames = jsFiles.map(f => path.basename(f, '.js'));
-const texBasenames = texFiles.map(f => path.basename(f, '.tex'));
+const jsBasenames = jsFiles.map((f) => path.basename(f, ".js"));
+const texBasenames = texFiles.map((f) => path.basename(f, ".tex"));
 
-describe('Exercise structure integrity', () => {
-  it('All exercises have exactly 5 tests', () => {
+describe("Exercise structure integrity", () => {
+  it("All exercises have exactly 5 tests", () => {
     for (const file of jsFiles) {
-      const content = fs.readFileSync(path.join(testsDir, file), 'utf-8');
+      const content = fs.readFileSync(path.join(testsDir, file), "utf-8");
       const count = (content.match(/test\(/g) || []).length;
       expect(count, `${file} should have exactly 5 tests but has ${count}`).toBe(5);
     }
   });
 
-  it('All .tex files have matching .js files', () => {
+  it("All .tex files have matching .js files", () => {
     const jsSet = new Set(jsBasenames);
     for (const name of texBasenames) {
       expect(jsSet.has(name), `${name}.tex has no matching .js file`).toBe(true);
     }
   });
 
-  it('All .js files have matching .tex files', () => {
+  it("All .js files have matching .tex files", () => {
     const texSet = new Set(texBasenames);
     for (const name of jsBasenames) {
       expect(texSet.has(name), `${name}.js has no matching .tex file`).toBe(true);
     }
   });
 
-  it('No duplicate function names across exercises', () => {
+  it("No duplicate function names across exercises", () => {
     const functionToFile = new Map();
     for (const file of jsFiles) {
-      const content = fs.readFileSync(path.join(testsDir, file), 'utf-8');
+      const content = fs.readFileSync(path.join(testsDir, file), "utf-8");
       const matches = content.match(/functions\.(\w+)/g) || [];
-      const names = [...new Set(matches.map(m => m.replace('functions.', '')))];
+      const names = [...new Set(matches.map((m) => m.replace("functions.", "")))];
       for (const name of names) {
         expect(
           functionToFile.has(name),
-          `Function "${name}" appears in both ${functionToFile.get(name)} and ${file}`
+          `Function "${name}" appears in both ${functionToFile.get(name)} and ${file}`,
         ).toBe(false);
         functionToFile.set(name, file);
       }

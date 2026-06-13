@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "exam",
+    "slug": "exam",
+    "version": "1.0.0",
+    "platforms": ["ios", "android"]
+  }
+}

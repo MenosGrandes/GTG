@@ -1,0 +1,25 @@
+# Python Plugin - Justfile
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Parameters passed from root justfile
+seed := env_var_or_default("SEED", "12")
+count := env_var_or_default("COUNT", "3")
+difficulty := env_var_or_default("DIFFICULTY", "")
+build_dir := env_var_or_default("BUILD_DIR", "build")
+test_dir := env_var_or_default("TEST_DIR", "output/tests")
+config_file := env_var_or_default("CONFIG_FILE", ".gtgrc")
+main_js_file := env_var_or_default("MAIN_JS_FILE", "main.js")
+main_file := env_var_or_default("MAIN_FILE", "main")
+
+[doc("Build Python tests: select exercises and generate test file")]
+compile-tests:
+    #!/usr/bin/env bash
+    check_dup=$(node -e "process.stdout.write(String(JSON.parse(require('fs').readFileSync('{{config_file}}','utf8')).checkDuplicates))")
+    if [ "$check_dup" = "false" ]; then
+        echo "  ⚠ Duplication finder is set to OFF"
+    elif [ -f "{{build_dir}}/.duplicates_checked" ]; then
+        echo "  ℹ Duplication check skipped (already passed)"
+    fi
+    echo "  → SEED: {{seed}}, COUNT: {{count}}"
+    node {{main_js_file}} {{seed}} {{count}} '{{test_dir}}/{{main_file}}.py' '{{difficulty}}'
+    echo "  ✓ Test file: {{test_dir}}/{{main_file}}.py"

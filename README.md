@@ -33,7 +33,7 @@ make distclean                # Remove all generated files + node_modules
 
 ## Configuration
 
-All paths and flags are in `project.config.json`:
+All paths and flags are in `.gtgrc`:
 
 | Field             | Purpose                                   |
 | ----------------- | ----------------------------------------- |
@@ -63,7 +63,7 @@ All paths and flags are in `project.config.json`:
 ```
 main.js                        # JS pipeline entry point
 main.tex                       # LaTeX document entry point
-project.config.json            # Central configuration
+.gtgrc            # Central configuration
 Makefile                       # Build orchestration
 exercises/
 ├── tests/                     # JS test files (file_72.js – file_127.js)

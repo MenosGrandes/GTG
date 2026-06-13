@@ -110,7 +110,7 @@ def test_encrypt_pdf_strips_tounicode():
         )
         assert result.returncode == 0
 
-        owner_password = result.stdout.strip()
+        owner_password = result.stdout.strip().split(': ', 1)[-1]
         encrypted = pikepdf.open(str(output_pdf), password=owner_password)
         for page in encrypted.pages:
             if "/Resources" in page and "/Font" in page["/Resources"]:
