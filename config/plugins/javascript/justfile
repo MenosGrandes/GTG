@@ -2,15 +2,12 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
 # Parameters passed from root justfile
-seed := env_var_or_default("SEED", "12")
-count := env_var_or_default("COUNT", "3")
-difficulty := env_var_or_default("DIFFICULTY", "")
-build_dir := env_var_or_default("BUILD_DIR", "build")
-test_dir := env_var_or_default("TEST_DIR", "output/tests")
-config_file := env_var_or_default("CONFIG_FILE", ".gtgrc")
-main_js_file := env_var_or_default("MAIN_JS_FILE", "main.js")
-main_file := env_var_or_default("MAIN_FILE", "main")
-output_js_file := env_var_or_default("OUTPUT_JS_FILE", "functions.test.js")
+seed := env("SEED")
+difficulty := env("DIFFICULTY")
+test_dir := env("TEST_DIR")
+main_js_file := env("MAIN_JS_FILE")
+main_file := env("MAIN_FILE")
+output_js_file := env("OUTPUT_JS_FILE")
 
 # Shared plugin paths
 shared_dir := justfile_directory() / "../shared"
@@ -20,20 +17,26 @@ obfuscator := shared_dir / "node_modules/.bin/javascript-obfuscator"
 # Plugin paths
 plugin_dir := justfile_directory()
 
-[doc("Build JavaScript tests: select, obfuscate names, obfuscate code, integrity check")]
-compile-tests:
+[doc("Check dependencies")]
+check_dependencies:
     #!/usr/bin/env bash
-    echo "  → SEED: {{seed}}, COUNT: {{count}}"
-    echo "  → Step 1: Selecting and mangling exercises..."
-    node {{main_js_file}} {{seed}} {{count}} '{{test_dir}}/{{main_file}}.js' '{{difficulty}}'
+    just --justfile {{ shared_dir }}/justfile --working-directory . check_shared_dependency
 
-    echo "  → Step 2: Installing shared plugin dependencies..."
-    if [ ! -f "{{npm_sentinel}}" ] || [ "{{shared_dir}}/package.json" -nt "{{npm_sentinel}}" ]; then
-        npm install --prefix "{{shared_dir}}" --silent 2>&1 | grep -v "^npm" || true
-        touch "{{npm_sentinel}}"
-    else
-        echo "  → Shared dependencies up to date"
-    fi
+
+[doc("Build JavaScript tests: select, obfuscate names, obfuscate code, integrity check")]
+compile-tests: check_dependencies
+    #!/usr/bin/env bash
+    echo "  → SEED: {{seed}}"
+    echo "  → Step 1: Selecting and mangling exercises..."
+    node {{main_js_file}} {{seed}} '{{test_dir}}/{{main_file}}.js' '{{difficulty}}'
+
+    #echo "  → Step 2: Installing shared plugin dependencies..."
+    #if [ ! -f "{{npm_sentinel}}" ] || [ "{{shared_dir}}/package.json" -nt "{{npm_sentinel}}" ]; then
+    #    npm install --prefix "{{shared_dir}}" --silent 2>&1 | grep -v "^npm" || true
+    #    touch "{{npm_sentinel}}"
+    #else
+    #    echo "  → Shared dependencies up to date"
+    #fi
 
     echo "  → Step 3: Appending integrity check..."
     cat '{{plugin_dir}}/integrity.js' >> '{{test_dir}}/{{main_file}}.mangled.js'

@@ -43,11 +43,10 @@ export function createTmpContext(prefix, extension) {
  * @param {boolean} options.mangled - Enable mangling
  * @param {string} options.args - Args to pass to main.js after seed/count (e.g. "'{1,2},{2,1}'")
  * @param {number} options.seed - Seed value (default 42)
- * @param {number} options.count - Exercise count (default 3)
  */
 export function createPipelineContext(
   language,
-  { mangled = true, args, seed = 42, count = 3, extension = ".jsx" } = {},
+  { mangled = true, args, seed = 42, extension = ".jsx" } = {},
 ) {
   let originalConfig;
   const outputFile = resolve(OUTPUT_DIR, `main${extension}`);
@@ -64,7 +63,7 @@ export function createPipelineContext(
     if (existsSync(OUTPUT_DIR)) rmSync(OUTPUT_DIR, { recursive: true, force: true });
     mkdirSync(BUILD_DIR, { recursive: true });
     mkdirSync(OUTPUT_DIR, { recursive: true });
-    execSync(`node main.js ${seed} ${count} '${outputFile}' ${args}`, { cwd: ROOT, stdio: "pipe" });
+    execSync(`node main.js ${seed} '${outputFile}' ${args}`, { cwd: ROOT, stdio: "pipe" });
   }
 
   function teardownPipeline() {

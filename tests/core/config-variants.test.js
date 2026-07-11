@@ -36,7 +36,7 @@ function setConfig(overrides) {
 
 function runMain(n = 3) {
   const output = resolve(BUILD_DIR, "output.js");
-  execSync(`node main.js ${SEED} ${n} ${output} '{3,${n}}'`, { cwd: ROOT, stdio: "pipe" });
+  execSync(`node main.js ${SEED} ${output} '{3,${n}}'`, { cwd: ROOT, stdio: "pipe" });
   return output;
 }
 
@@ -66,7 +66,7 @@ describe("config-variants", () => {
     expect(content).toMatch(/functions\.\w+/);
   });
 
-  test("different COUNT values select correct number of files", () => {
+  test("different count values in difficulty select correct number of files", () => {
     setConfig({ mangled: false });
     for (const count of [1, 3, 5]) {
       if (existsSync(BUILD_DIR)) {

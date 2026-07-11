@@ -2,14 +2,13 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
 # Parameters passed from root justfile
-seed := env_var_or_default("SEED", "12")
-count := env_var_or_default("COUNT", "3")
-difficulty := env_var_or_default("DIFFICULTY", "")
-build_dir := env_var_or_default("BUILD_DIR", "build")
-test_dir := env_var_or_default("TEST_DIR", "output/tests")
-config_file := env_var_or_default("CONFIG_FILE", ".gtgrc")
-main_js_file := env_var_or_default("MAIN_JS_FILE", "main.js")
-main_file := env_var_or_default("MAIN_FILE", "main")
+seed := env("SEED")
+difficulty := env("DIFFICULTY")
+build_dir := env("BUILD_DIR")
+test_dir := env("TEST_DIR")
+config_file := env("CONFIG_FILE")
+main_js_file := env("MAIN_JS_FILE")
+main_file := env("MAIN_FILE")
 
 [doc("Build Python tests: select exercises and generate test file")]
 compile-tests:
@@ -20,6 +19,6 @@ compile-tests:
     elif [ -f "{{build_dir}}/.duplicates_checked" ]; then
         echo "  ℹ Duplication check skipped (already passed)"
     fi
-    echo "  → SEED: {{seed}}, COUNT: {{count}}"
-    node {{main_js_file}} {{seed}} {{count}} '{{test_dir}}/{{main_file}}.py' '{{difficulty}}'
+    echo "  → SEED: {{seed}}"
+    node {{main_js_file}} {{seed}}  '{{test_dir}}/{{main_file}}.py' '{{difficulty}}'
     echo "  ✓ Test file: {{test_dir}}/{{main_file}}.py"

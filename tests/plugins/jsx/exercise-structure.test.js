@@ -42,7 +42,7 @@ describe("JSX exercise structure", () => {
     const nameToFile = new Map();
     for (const file of jsxFiles) {
       const content = fs.readFileSync(path.join(testsDir, file), "utf-8");
-      const imports = [...content.matchAll(/import\s+([A-Z][A-Za-z]*)\s+from/g)];
+      const imports = [...content.matchAll(/import\s+([A-Z]\w*)\s+from/g)];
       for (const [, name] of imports) {
         expect(
           nameToFile.has(name),

@@ -13,6 +13,8 @@ export class JavaScriptPlugin extends LanguagePlugin {
   get extension() {
     return ".js";
   }
+  //MenosGrandes  this will not catch if a function have a intiger in it's name right?
+  // Latex itself forbids a definition of 'command' with a integer in names. So I have to also block it.
   get namePattern() {
     return /functions\.([A-Za-z]+)/g;
   }

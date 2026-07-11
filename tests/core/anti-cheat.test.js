@@ -20,10 +20,9 @@ function collectOriginalNames() {
   return names;
 }
 
-//MenosGrandes TODO tthis is stupid
 describe("Anti-cheat mechanisms", () => {
   beforeAll(() => {
-    const env = { ...process.env, SEED: "1", COUNT: "1", DIFFICULTY: "{3,1}" };
+    const env = { ...process.env, SEED: "1", DIFFICULTY: "{3,1}" };
     if (!existsSync(mangledPath) || !existsSync(functionsTestPath)) {
       execSync("just compile-tests", { cwd: root, stdio: "pipe", timeout: 60000, env });
     }

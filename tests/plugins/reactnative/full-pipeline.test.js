@@ -24,7 +24,7 @@ describe("ReactNative Full Pipeline (justfile)", () => {
     execSync("just compile-tests", {
       cwd: ROOT,
       stdio: "pipe",
-      env: { ...process.env, SEED: "42", COUNT: "1", DIFFICULTY: "{1,1}" },
+      env: { ...process.env, SEED: "42", DIFFICULTY: "{1,1}" },
     });
   }, 120000);
 

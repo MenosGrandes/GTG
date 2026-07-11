@@ -11,7 +11,10 @@ describe("ReactNativePlugin.extractNames", () => {
     const code = 'import Clicker from "../src/Clicker";';
     expect(plugin.extractNames(code)).toContain("Clicker");
   });
-
+  it("extracts component from import statement, string and in in name", () => {
+    const code = 'import Clicker1 from "../src/Clicker1";';
+    expect(plugin.extractNames(code)).toContain("Clicker1");
+  });
   it("extracts component from JSX tag", () => {
     const code = "<Toggler active={true} />";
     expect(plugin.extractNames(code)).toContain("Toggler");
@@ -39,7 +42,18 @@ import Toggler from "../src/Toggler";
     expect(names).toContain("Toggler");
     expect(names.length).toBe(2);
   });
-
+  it("extracts multiple unique names with int and string", () => {
+    const code = `
+import Clicker2 from "../src/Clicker2";
+import Clicker3 from "../src/Clicker3";
+<Clicker2 />
+<Clicker3 />
+`;
+    const names = plugin.extractNames(code);
+    expect(names).toContain("Clicker2");
+    expect(names).toContain("Clicker3");
+    expect(names.length).toBe(2);
+  });
   it("deduplicates names", () => {
     const code = `
 import Clicker from "../src/Clicker";

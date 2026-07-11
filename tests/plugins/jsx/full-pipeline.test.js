@@ -23,8 +23,8 @@ describe("JSX Full Pipeline (justfile)", () => {
     mkdirSync(ZIP_DIR, { recursive: true });
     execSync("just compile-tests", {
       cwd: ROOT,
-      stdio: "pipe",
-      env: { ...process.env, SEED: "42", COUNT: "1", DIFFICULTY: "{1,1}" },
+      stdio: "inherit",
+      env: { ...process.env, SEED: "42", DIFFICULTY: "{1,1}" },
     });
   }, 120000);
 

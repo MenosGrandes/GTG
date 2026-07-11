@@ -38,14 +38,8 @@ end
 -- strona JS zapisuje sobie wynik do pliku .txt w build.
 -- Przeczytaj z tego pliku poprostu i wybierz te same pliki z koncowka tex
 -- ─────────────────────────────────────────────────────────────────────────────
-function input_exercise_files(seed, count)
+function input_exercise_files()
     local dir_name = config:getExercisesTexDir()
-    local count_num = tonumber(count) or 0
-
-    if count_num <= 0 then
-        tex.sprint("\\textbf{\\textcolor{red}{ERROR: Count must be a positive number.}}")
-        return
-    end
 
     local attr = lfs.attributes(dir_name)
     if not attr or attr.mode ~= "directory" then

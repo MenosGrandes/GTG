@@ -35,12 +35,15 @@ export class ComponentPlugin extends LanguagePlugin {
   getTestsDir() {
     throw new Error("ComponentPlugin subclass must override getTestsDir()");
   }
-
+  //ignore lower case element, html tags
   extractNames(content) {
     const names = new Set();
-    for (const m of content.matchAll(/import\s+([A-Z][A-Za-z]*)\s+from\s+['"]\.\.?\/src\//g))
+    for (const m of content.matchAll(/import\s+([A-Z]\w+)/g)) {
       names.add(m[1]);
-    for (const m of content.matchAll(/<([A-Z][A-Za-z]*)/g)) names.add(m[1]);
+    }
+    for (const m of content.matchAll(/<([A-Z](\w+)*)/g)) {
+      names.add(m[1]);
+    }
     return [...names];
   }
 
@@ -49,15 +52,13 @@ export class ComponentPlugin extends LanguagePlugin {
     for (const file of files) parts.push(readFileSync(join(testsDir, file), "utf8"));
     writeFileSync(outputPath, parts.join("\n"));
   }
-
+  //MenosGrandes TODO isnt it copy pasted from obfuscation.js ?
   obfuscate(seed, inputPath, outputPath, mappingPath) {
     const code = readFileSync(inputPath, "utf8");
     const names = [
       ...new Set([
-        ...[...code.matchAll(/import\s+([A-Z][A-Za-z]*)\s+from\s+['"]\.\.?\/src\//g)].map(
-          (m) => m[1],
-        ),
-        ...[...code.matchAll(/<([A-Z][A-Za-z]*)/g)].map((m) => m[1]),
+        ...[...code.matchAll(/import\s+([A-Z]\w*)\s+from\s+['"]\.\.?\/src\//g)].map((m) => m[1]),
+        ...[...code.matchAll(/<([A-Z]\w*)/g)].map((m) => m[1]),
       ]),
     ]
       .filter((n) => /^[A-Za-z]+$/.test(n))

@@ -1,9 +1,8 @@
-# JavaScript Plugin - Justfile
-set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# Shared plugin paths
+set shell := ["bash", "-euo", "pipefail", "-c"]
 shared_dir := justfile_directory() 
 npm_sentinel := shared_dir / ".npm_installed"
+# Shared plugin paths
 
 [doc("Check dependency for shared deps plugin")]
 check_shared_dependency:

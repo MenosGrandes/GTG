@@ -19,8 +19,8 @@
     },
     "functionMapping": "function_mapping_{seed}.tex"
   },
-  "mangled": false,
+  "mangled": true,
   "checkDuplicates": true,
-  "language": "javascript",
+  "language": "jsx",
   "texLanguage": "en"
 }

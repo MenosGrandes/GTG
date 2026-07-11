@@ -74,7 +74,7 @@ describe("ReactNative Expo scaffold", () => {
       mkdirSync(BUILD_DIR, { recursive: true });
       mkdirSync(OUTPUT_DIR, { recursive: true });
       mkdirSync(ZIP_DIR, { recursive: true });
-      execSync(`node main.js 42 3 '${OUTPUT_DIR}/main.jsx' '{1,2},{2,1}'`, {
+      execSync(`node main.js 42 '${OUTPUT_DIR}/main.jsx' '{1,2},{2,1}'`, {
         cwd: ROOT,
         stdio: "pipe",
       });

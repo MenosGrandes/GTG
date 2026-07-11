@@ -28,7 +28,7 @@ describe("JSX Pipeline Integration", () => {
   it("mangled output has no original component names", () => {
     const original = readFileSync(ctx.outputFile, "utf8");
     const mangled = readFileSync(ctx.mangledFile, "utf8");
-    const names = [...original.matchAll(/import\s+([A-Z][A-Za-z]*)\s+from/g)].map((m) => m[1]);
+    const names = [...original.matchAll(/import\s+([A-Z]\w*)\s+from/g)].map((m) => m[1]);
     expect(names.length).toBeGreaterThan(0);
     for (const name of names) {
       expect(mangled).not.toContain(name);
@@ -62,7 +62,7 @@ describe("JSX Pipeline Integration", () => {
     const mangled1 = readFileSync(ctx.mangledFile, "utf8");
     if (existsSync(BUILD_DIR)) rmSync(BUILD_DIR, { recursive: true, force: true });
     mkdirSync(BUILD_DIR, { recursive: true });
-    execSync(`node main.js 42 3 '${ctx.outputFile}' '{1,1},{2,1},{3,1}'`, {
+    execSync(`node main.js 42 '${ctx.outputFile}' '{1,1},{2,1},{3,1}'`, {
       cwd: ctx.ROOT,
       stdio: "pipe",
     });

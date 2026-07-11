@@ -14,49 +14,46 @@ process.on("unhandledRejection", (reason) => {
 });
 
 function parseArgs() {
-  if (process.argv.length < 6) {
-    console.error("Usage: node main.js <seed> <N> <output> <difficulty>");
+  if (process.argv.length < 4) {
+    console.error("Usage: node main.js <seed>  <output> <difficulty>");
     console.error("  difficulty: {level,count} tuples, e.g. {1,2},{3,1},{5,1}");
     process.exit(1);
   }
 
   const seedStr = process.argv[2];
-  const n = parseInt(process.argv[3], 10);
-  const outputFilePath = process.argv[4];
-  const difficulty = process.argv[5];
+  const outputFilePath = process.argv[3];
+  const difficulty = process.argv[4];
 
   if (!/^\d+$/.test(seedStr)) {
-    console.error("SEED must be a non-negative integer.");
+    throw new Error(`SEED must be a non-negative integer. ${seedStr}`);
     process.exit(1);
   }
 
   const seed = parseInt(seedStr, 10);
 
-  if (isNaN(n) || n <= 0) {
-    console.error("N must be a positive integer.");
-    process.exit(1);
-  }
-
   const tupleMatch = difficulty.match(/\{(\d+),(\d+)\}/g);
   if (!tupleMatch) {
-    console.error("DIFFICULTY must be {level,count} tuples (e.g., {1,5},{3,2}).");
+    throw new Error(`DIFFICULTY must be {level,count} tuples (e.g., {1,5},{3,2}). ${difficulty}`);
+
     process.exit(1);
   }
   const difficulties = [];
   for (const t of tupleMatch) {
     const [, level, count] = t.match(/\{(\d+),(\d+)\}/);
-    for (let i = 0; i < parseInt(count, 10); i++) difficulties.push(parseInt(level, 10));
+    for (let i = 0; i < parseInt(count, 10); i++) {
+      difficulties.push(parseInt(level, 10));
+    }
   }
 
-  return { seed, n, outputFilePath, difficulties };
+  return { seed, outputFilePath, difficulties };
 }
 
-const { seed, n, outputFilePath, difficulties } = parseArgs();
+const { seed, outputFilePath, difficulties } = parseArgs();
 const plugin = getPlugin(config.getLanguage());
 
 const selector = new FileSelector(config, plugin);
 const selectedFiles = selector.getFilesByDifficulty(seed, difficulties);
-
+console.log(selectedFiles);
 plugin.concatenate(selectedFiles, selector.testsDir, plugin.getUtilsPath(), outputFilePath);
 
 if (config.getMangled() && plugin.supportsObfuscation) {

@@ -6,10 +6,8 @@ set positional-arguments := true
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 config_file := ".gtgrc"
-seed := env_var_or_default("SEED", "12")
-count := env_var_or_default("COUNT", "3")
-difficulty := env_var_or_default("DIFFICULTY", "{1,5},{3,2}")
-n := env_var_or_default("N", "1")
+seed := env("SEED","0")
+difficulty := env("DIFFICULTY","{1,1}")
 root_directory := source_directory()
 
 # ─── NPM Configuration ────────────────────────────────────────────────────────────
@@ -35,7 +33,7 @@ plugins_dir := "config/plugins"
 main_file := "main"
 tex_file := main_file + ".tex"
 main_js_file := main_file + ".js"
-mangled_js_file := main_file + ".mangled.js"
+#MenosGrandes TODO those  output_js_file and zip_file should be set only by plugins
 output_js_file := "functions.test.js"
 zip_file := "functions.zip"
 
@@ -46,14 +44,7 @@ node := "node"
 npm := "npm"
 uv := "uv"
 
-# ─── Colors ───────────────────────────────────────────────────────────────────
 
-red := '\033[31m'
-green := '\033[32m'
-yellow := '\033[33m'
-blue := '\033[34m'
-bold := '\033[1m'
-reset := '\033[0m'
 
 # ─── Escape helpers ──────────────────────────────────────────────────────────
 
@@ -104,12 +95,12 @@ root_npm_dependencies:
     fi
 
 
+#MenosGrandes do I need to export them? Yes, as they are used as env vars in other recipes and by tests
 [doc("Build tests (dispatches to language plugin)")]
 compile-tests: _dirs root_npm_dependencies
     #!/usr/bin/env bash
     just _header "Building Tests [{{ language }}]"
     export SEED="{{ seed }}"
-    export COUNT="{{ count }}"
     export DIFFICULTY="{{ difficulty }}"
     export BUILD_DIR="{{ build_dir }}"
     export TEST_DIR="{{ test_dir }}"
@@ -119,7 +110,7 @@ compile-tests: _dirs root_npm_dependencies
     export OUTPUT_JS_FILE="{{ output_js_file }}"
     export ZIP_DIR="{{ zip_dir }}"
     export ZIP_FILE="{{ zip_file }}"
-    echo "  → SEED: {{seed}}, COUNT: {{count}}, DIFFICULTY: {{difficulty}}"
+    echo "  → SEED: {{seed}}, DIFFICULTY: {{difficulty}}"
     just --justfile {{ plugins_dir }}/{{ language }}/justfile --working-directory . compile-tests
 
 [doc("Generate function name images")]
@@ -131,31 +122,30 @@ generate-fn-images: _dirs
 [doc("Encrypt PDF and strip ToUnicode")]
 [private]
 _secure-pdf:
-    @echo "  → Encrypting and stripping ToUnicode..."
-    @{{ uv }} run python config/core/py/encrypt_pdf.py "{{ pdf_dir }}/{{ main_file }}.pdf" {{ seed }} "{{ pdf_dir }}/{{ main_file }}_encrypted.pdf"
+    @just _header "  → Encrypting and stripping ToUnicode..."
+    @{{ uv }} run python config/core/py/encrypt_pdf.py "{{ pdf_dir }}/{{ main_file }}.pdf"  {{ seed }}  "{{ pdf_dir }}/{{ main_file }}_encrypted.pdf"
     @rm -f "{{ pdf_dir }}/{{ main_file }}.pdf"
     @mv "{{ pdf_dir }}/{{ main_file }}_encrypted.pdf" "{{ pdf_dir }}/{{ main_file }}.pdf"
     @echo "  ✓ PDF secured"
 
 [doc("Build PDF with LuaLaTeX")]
 [private]
-compile-pdf: check-tools generate-fn-images _dirs
+compile-pdf: check-tools generate-fn-images _dirs && _secure-pdf
     #!/usr/bin/env bash
     just _header "Building PDF with LuaLaTeX"
-    echo "  → SEED: {{ seed }}, COUNT: {{ count }}"
+    echo "  → SEED: {{ seed }}"
     echo "  → Compiling {{ main_file }}..."
     export TEXMF_OUTPUT_DIRECTORY={{ build_dir }}
     {{ lualatex }} --shell-escape -output-directory={{ build_dir }} -jobname={{ main_file }} \
         -interaction=nonstopmode -halt-on-error \
-        '\def\myseed{{ lbrace }}{{ seed }}{{ rbrace }}\def\mycount{{ lbrace }}{{ count }}{{ rbrace }}\input{{ lbrace }}{{ tex_file }}{{ rbrace }}' \
+        '\def\myseed{{ lbrace }}{{ seed }}{{ rbrace }}\input{{ lbrace }}{{ tex_file }}{{ rbrace }}' \
         > {{ build_dir }}/{{ main_file }}.log 2>&1 || \
         { echo "=== ERROR ==="; grep -A5 "^!" {{ build_dir }}/{{ main_file }}.log; \
           echo "Full log: {{ build_dir }}/{{ main_file }}.log"; exit 1; }
     mv {{ build_dir }}/{{ main_file }}.pdf {{ pdf_dir }}/{{ main_file }}.pdf
     echo "  ✓ PDF created: {{ pdf_dir }}/{{ main_file }}.pdf"
-    just _secure-pdf
 
-
+#MenosGrandes TODO  move zip creation to plugin ?
 [doc("Create ZIP archive")]
 [private]
 create-zip: compile-tests compile-pdf
@@ -218,24 +208,15 @@ distclean: clean-output clean-build plugins-clean
     @rm -f *~ *.bak
     @echo "✓ All cleaned"
 
-[doc("Generate N solutions with random seeds")]
-random-seeds:
-    #!/usr/bin/env bash
-    just _header "Generating {{ n }} random seeds"
-    for i in $(seq 1 {{ n }}); do
-        rseed=$(node -e "console.log(Math.floor(Math.random()*999999)+1)")
-        echo "  → Building with SEED=$rseed COUNT={{ count }}"
-        just seed=$rseed count={{ count }} create || exit 1
-    done
-    echo "  ✓ Generated {{ n }} solutions"
+
 
 [doc("Run all tests (JS + Python)")]
-run_internal_tests: check-tools
+run_internal_tests: check-tools root_npm_dependencies
     #!/usr/bin/env bash
     just _header "Running all tests"
     echo "  → JavaScript tests (vitest)..."
 
-    npx vitest run || exit 1
+    npx vitest run --printConsoleTrace=true --silent=false || exit 1
     echo ""
     echo "  → Python tests (pytest)..."
     uv run pytest tests/unit/ || exit 1
